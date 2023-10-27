@@ -18,14 +18,17 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String)
     username = db.Column(db.String)
+    first_name = db.Column(db.String)
+    last_name = db.Column(db.String)
+    address = db.Column(db.String)
+    phone_number = db.Column(db.String)
     email = db.Column(db.String)
     password_hash = db.Column(db.String)
     profile_pic = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
-    photos = db.relationship('Photo', back_populates='user', cascade='all, delete-orphan')
-    transactions = db.relationship('Transaction', back_populates='user')
+    orders = db.relationship('Order', back_populates='user', cascade='all, delete-orphan')
     cart = db.relationship('Cart', back_populates='user')
 
     __table_args__ = (UniqueConstraint('username', name='user_unique_constraint'),)
@@ -39,58 +42,78 @@ class User(db.Model):
     def check_password(self, password):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
+class Vendor(db.Model):
+    __tablename__ = 'vendors'
 
-class Photo(db.Model):
-    __tablename__ = 'photos'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    fullnames = db.Column(db.String)
+    business_name = db.Column(db.String)
+    mobile_number = db.Column(db.String)
+    email_address = db.Column(db.String)
+    physical_address = db.Column(db.String)
+    map_location = db.Column(db.String)
+    product_list = db.Column(db.String)
+    image = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+
+    products = db.relationship('Product', back_populates='vendor', cascade='all, delete-orphan')
+    orders = association_proxy('products', 'order')
+
+    
+    
+    def __repr__(self):
+        return f'(id={self.id}, businessName={self.business_name} email={self.email_address} mobile_number={self.mobile_number} product_list={self.product_list} )'
+
+class Product(db.Model):
+    __tablename__ = 'products'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     description = db.Column(db.String)
     price = db.Column(db.Numeric(precision=10, scale=2))
-    user_id = db.Column(db.Integer, ForeignKey('users.id'))
-    category_id = db.Column(db.Integer, ForeignKey('categories.id'))
+    vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     image = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
-    __table_args__ = (UniqueConstraint('name', name='img_name_unique_constraint'),)
+    __table_args__ = (UniqueConstraint('name', name='product_name_unique_constraint'),)
 
-    category = db.relationship('Category', back_populates='photos')
-    user = db.relationship('User', back_populates='photos')
-    transaction = db.relationship('Transaction', back_populates='photo')
-    cart_items = db.relationship('CartItem', back_populates='photo', cascade='all, delete-orphan')
+    vendor = db.relationship('Vendor', back_populates='products')
+    category = db.relationship('Category', back_populates='products')
+    orders = db.relationship('Order', back_populates='product')
 
     def __repr__(self):
         return f'(id={self.id}, name={self.name} description={self.description} price={self.price} price={self.image} user_id={self.user_id} category_id={self.category_id} )'
-
 
 class Category(db.Model):
     __tablename__ = 'categories'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    image = db.Column(db.String)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     __table_args__ = (UniqueConstraint('name', name='category_name_unique_constraint'),)
 
-    photos = db.relationship('Photo', back_populates='category', cascade='all, delete-orphan')
+    products = db.relationship('Product', back_populates='category', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'(id={self.id}, name={self.name})'
-
-
 
 class Cart(db.Model):
     __tablename__ = 'carts'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     user = db.relationship('User', back_populates='cart')
-    items = db.relationship('CartItem', back_populates='cart', cascade='all, delete-orphan')
+    cartItems = db.relationship('CartItem', backref='cart', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'(id={self.id}, user_id={self.user_id})'
@@ -99,30 +122,30 @@ class CartItem(db.Model):
     __tablename__ = 'cart_items'
 
     id = db.Column(db.Integer, primary_key=True)
-    cart_id = db.Column(db.Integer, ForeignKey('carts.id'))
-    photo_id = db.Column(db.Integer, ForeignKey('photos.id'))
+    cart_id = db.Column(db.Integer, db.ForeignKey('carts.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
     quantity = db.Column(db.Integer)
     added_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    cart = db.relationship('Cart', back_populates='items')
-    photo = db.relationship('Photo', back_populates='cart_items')
-    transaction = db.relationship('Transaction', back_populates='cart_item')
 
     def __repr__(self):
         return f'(id={self.id}, cart_id={self.cart_id}, photo_id={self.photo_id}, quantity={self.quantity})'
 
-class Transaction(db.Model):
-    __tablename__ = 'transactions'
+class Order(db.Model):
+    __tablename__ = 'orders'
 
     id = db.Column(db.Integer, primary_key=True)
-    photo_id = db.Column(db.Integer, ForeignKey('photos.id')) 
-    cart_item_id = db.Column(db.Integer, ForeignKey('cart_items.id'))
-    user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id')) 
+    cart_item_id = db.Column(db.Integer, db.ForeignKey('cart_items.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     purchased_at = db.Column(db.DateTime, server_default=db.func.now())
-    cart_item = db.relationship('CartItem', back_populates='transaction')
-
-    photo = db.relationship('Photo', back_populates='transaction')
-    user = db.relationship('User', back_populates='transactions')
+    quantity = db.Column(db.Integer)
+    status = db.Column(db.String)
+    order_date = db.Column(db.DateTime, onupdate=db.func.now())
+    
+    # cart_item = db.relationship('CartItem', back_populates='order')
+    product = db.relationship('Product', back_populates='orders')
+    user = db.relationship('User', back_populates='orders')
 
 
     @validates('cart_item')
