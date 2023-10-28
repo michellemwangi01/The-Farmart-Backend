@@ -508,3 +508,29 @@ class CartResource(Resource):
         db.session.commit()
         return cart
 # Additional routes for handling specific use cases or edge-cases may be added here...
+
+@ns.route('/cart_items/<int:id>')
+class CartItemResource(Resource):
+    @ns.expect(cart_item_input_schema)
+    @ns.marshal_with(cart_item_schema)
+    def put(self, id):
+        # Update a cart item by ID using request data
+        cart_item = CartItem.query.get_or_404(id)
+        data = request.get_json()
+        cart_item.photo_id = data.get('photo_id')
+        cart_item.quantity = data.get('quantity')
+        db.session.commit()
+        return cart_item
+
+    @ns.expect(cart_item_input_schema)
+    @ns.marshal_with(cart_item_schema)
+    def patch(self, id):
+        # Partially update a cart item by ID using request data
+        cart_item = CartItem.query.get_or_404(id)
+        data = request.get_json()
+        if 'photo_id' in data:
+            cart_item.photo_id = data.get('photo_id')
+        if 'quantity' in data:
+            cart_item.quantity = data.get('quantity')
+        db.session.commit()
+        return cart_item
