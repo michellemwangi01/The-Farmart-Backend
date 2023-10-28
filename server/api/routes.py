@@ -340,103 +340,103 @@ class Orders(Resource):
 
 
 
-#             #*********DELETE********
-# # Delete a vendor
-# @ns.route('/vendors/<int:id>')
-# class VendorResource(Resource):
-#     @ns.marshal_with(vendor_schema)
-#     def get(self, id):
-#         vendor = Vendor.query.get_or_404(id)
-#         return vendor
+            #*********DELETE********
+# Delete a vendor
+@ns.route('/vendors/<int:id>')
+class VendorResource(Resource):
+    @ns.marshal_with(vendor_schema)
+    def get(self, id):
+        vendor = Vendor.query.get_or_404(id)
+        return vendor
 
-#     @ns.response(204, 'Vendor deleted')
-#     def delete(self, id):
-#         vendor = Vendor.query.get_or_404(id)
-#         db.session.delete(vendor)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Vendor deleted')
+    def delete(self, id):
+        vendor = Vendor.query.get_or_404(id)
+        db.session.delete(vendor)
+        db.session.commit()
+        return '', 204
 
-# # Products routes
+# Products routes
 
-# # Delete a product
-# @ns.route('/products/<int:id>')
-# class ProductResource(Resource):
-#     @ns.marshal_with(product_schema)
-#     def get(self, id):
-#         product = Product.query.get_or_404(id)
-#         return product
+# Delete a product
+@ns.route('/products/<int:id>')
+class ProductResource(Resource):
+    @ns.marshal_with(product_schema)
+    def get(self, id):
+        product = Product.query.get_or_404(id)
+        return product
 
-#     @ns.response(204, 'Product deleted')
-#     def delete(self, id):
-#         product = Product.query.get_or_404(id)
-#         db.session.delete(product)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Product deleted')
+    def delete(self, id):
+        product = Product.query.get_or_404(id)
+        db.session.delete(product)
+        db.session.commit()
+        return '', 204
 
-# # Categories routes
+# Categories routes
 
-# # Delete a category
-# @ns.route('/categories/<int:id>')
-# class CategoryResource(Resource):
-#     @ns.marshal_with(category_schema)
-#     def get(self, id):
-#         category = Category.query.get_or_404(id)
-#         return category
+# Delete a category
+@ns.route('/categories/<int:id>')
+class CategoryResource(Resource):
+    @ns.marshal_with(category_schema)
+    def get(self, id):
+        category = Category.query.get_or_404(id)
+        return category
 
-#     @ns.response(204, 'Category deleted')
-#     def delete(self, id):
-#         category = Category.query.get_or_404(id)
-#         db.session.delete(category)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Category deleted')
+    def delete(self, id):
+        category = Category.query.get_or_404(id)
+        db.session.delete(category)
+        db.session.commit()
+        return '', 204
 
-# # Orders routes
+# Orders routes
 
-# # Delete an order
-# @ns.route('/orders/<int:id>')
-# class OrderResource(Resource):
-#     @ns.marshal_with(order_schema)
-#     def get(self, id):
-#         order = Order.query.get_or_404(id)
-#         return order
+# Delete an order
+@ns.route('/orders/<int:id>')
+class OrderResource(Resource):
+    @ns.marshal_with(order_schema)
+    def get(self, id):
+        order = Order.query.get_or_404(id)
+        return order
 
-#     @ns.response(204, 'Order deleted')
-#     def delete(self, id):
-#         order = Order.query.get_or_404(id)
-#         db.session.delete(order)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Order deleted')
+    def delete(self, id):
+        order = Order.query.get_or_404(id)
+        db.session.delete(order)
+        db.session.commit()
+        return '', 204
 
-# # Carts routes
+# Carts routes
 
-# # Delete a cart
-# @ns.route('/carts/<int:id>')
-# class CartResource(Resource):
-#     @ns.marshal_with(cart_schema)
-#     def get(self, id):
-#         cart = Cart.query.get_or_404(id)
-#         return cart
+# Delete a cart
+@ns.route('/carts/<int:id>')
+class CartResource(Resource):
+    @ns.marshal_with(cart_schema)
+    def get(self, id):
+        cart = Cart.query.get_or_404(id)
+        return cart
 
-#     @ns.response(204, 'Cart deleted')
-#     def delete(self, id):
-#         cart = Cart.query.get_or_404(id)
-#         db.session.delete(cart)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Cart deleted')
+    def delete(self, id):
+        cart = Cart.query.get_or_404(id)
+        db.session.delete(cart)
+        db.session.commit()
+        return '', 204
 
-# # Cart_items routes
+# Cart_items routes
 
-# # Delete a cart item
-# @ns.route('/cart_items/<int:id>')
-# class CartItemResource(Resource):
-#     @ns.marshal_with(cart_item_schema)
-#     def get(self, id):
-#         cart_item = CartItem.query.get_or_404(id)
-#         return cart_item
+# Delete a cart item
+@ns.route('/cart_items/<int:id>')
+class CartItemResource(Resource):
+    @ns.marshal_with(cart_item_schema)
+    def get(self, id):
+        cart_item = CartItem.query.get_or_404(id)
+        return cart_item
 
-#     @ns.response(204, 'Cart item deleted')
-#     def delete(self, id):
-#         cart_item = CartItem.query.get_or_404(id)
-#         db.session.delete(cart_item)
-#         db.session.commit()
-#         return '', 204
+    @ns.response(204, 'Cart item deleted')
+    def delete(self, id):
+        cart_item = CartItem.query.get_or_404(id)
+        db.session.delete(cart_item)
+        db.session.commit()
+        return '', 204
