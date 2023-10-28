@@ -1,159 +1,200 @@
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import validates
-from sqlalchemy import MetaData, UniqueConstraint, ForeignKey
-from flask_sqlalchemy import SQLAlchemy
-import bcrypt
-from api import generate_password_hash
+from api import fields, api, ma, CartItem
+from marshmallow import Schema, fields
+from flask_restx import Api,Resource,Namespace,fields
 
-metadata = MetaData(naming_convention={
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+ns = Namespace('farmart')
+api.add_namespace(ns)
+
+# ------------------------- A P I _ M O D E L S ------------------------
+
+users_schema = api.model('user',{
+    "public_id": fields.String,
+    "username": fields.String,
+    "email": fields.String,
+    "profile_pic": fields.String
 })
 
-db = SQLAlchemy(metadata=metadata)
+user_input_schema = api.model('user_input',{
+    "username": fields.String,
+    "password": fields.String,
+    "repeatpassword": fields.String,
+    "email": fields.String,
+})
+user_login_schema = api.model('user_login',{
+    "username": fields.String,
+    "password": fields.String,
+
+})
+
+category_input_schema = api.model('category_input',{
+    "name": fields.String,
+})
 
 
-class User(db.Model):
-    __tablename__ = 'users'
+photo_category_schema = api.model('photo',{
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "price": fields.Integer,
+    "image": fields.String,
+})
 
-    id = db.Column(db.Integer, primary_key=True)
-    public_id = db.Column(db.String)
-    username = db.Column(db.String)
-    first_name = db.Column(db.String)
-    last_name = db.Column(db.String)
-    address = db.Column(db.String)
-    phone_number = db.Column(db.String)
-    email = db.Column(db.String)
-    password_hash = db.Column(db.String)
-    profile_pic = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+transaction_schema = api.model('transaction', {
+    "id": fields.Integer,
+    "photo": fields.Nested(photo_category_schema),
+    "user": fields.Nested(users_schema),
+    "purchased_at": fields.DateTime,
+})
 
-    orders = db.relationship('Order', back_populates='user', cascade='all, delete-orphan')
-    cart = db.relationship('Cart', back_populates='user')
+user_schema = api.model('user',{
+    "id": fields.Integer,
+    "public_id": fields.String,
+    "username": fields.String,
+    "email": fields.String,
+    "photos": fields.List(fields.Nested(photo_category_schema)),
+    "transactions": fields.List(fields.Nested(transaction_schema)),
+})
 
-    __table_args__ = (UniqueConstraint('username', name='user_unique_constraint'),)
+category_schema = api.model('category',{
+    "id": fields.Integer,
+    "name": fields.String,
+    "photos": fields.List(fields.Nested(photo_category_schema))
+})
+categories_schema = api.model('category',{
+    "id": fields.Integer,
+    "name": fields.String,
+})
+photo_schema = api.model('photo',{
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "price": fields.Integer,
+    "image": fields.String,
+    "user": fields.Nested(users_schema),
+    "category": fields.Nested(categories_schema)
+})
 
-    def __repr__(self):
-        return f'(id={self.id}, name={self.username} email={self.email} profile_pic={self.profile_pic})'
+photo_input_schema = api.model('photo_input',{
+    "name": fields.String,
+    "description": fields.String,
+    "price": fields.Integer,
+    "image": fields.String,
+    "user_id": fields.Integer,
+    "category_id": fields.Integer
+})
+class CartItemInputSchema(Schema):
+    product_id = fields.Integer(required=True)
+    quantity = fields.Integer(required=True)
+    cart_id = fields.Integer(required=True)
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+cart_item_input_schema = api.model('cart_item_input', {
+    "product_id": fields.Integer(required=True),
+    "quantity": fields.Integer(required=True),
+    "cart_id": fields.Integer(required=True)
+})
 
-    def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+transaction_input_schema = api.model('transaction_input', {
+    "product_id": fields.Integer(required=True),
+    "quantity": fields.Integer(required=True),
+})
 
-class Vendor(db.Model):
-    __tablename__ = 'vendors'
+cart_item_schema = api.model('cart_item', {
+    "id": fields.Integer,
+    "cart_id": fields.Integer,
+    "product_id": fields.Integer,
+    "quantity": fields.Integer,
+    "added_at": fields.DateTime,
+})
+transaction_input_schema = api.model('transaction_input', {
+    "id": fields.Integer,
+})
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    fullnames = db.Column(db.String)
-    business_name = db.Column(db.String)
-    mobile_number = db.Column(db.String)
-    email_address = db.Column(db.String)
-    physical_address = db.Column(db.String)
-    map_location = db.Column(db.String)
-    product_list = db.Column(db.String)
-    image = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+cart_item_output_schema = api.model('cart_item_output', {
+    "id": fields.Integer,
+    "cart_id": fields.Integer,
+    "product_id": fields.Integer,
+    "quantity": fields.Integer,
+    "added_at": fields.DateTime,
+    "photo": fields.Nested(photo_schema), 
+})
 
-    products = db.relationship('Product', back_populates='vendor', cascade='all, delete-orphan')
-    orders = association_proxy('products', 'order')
-
-    
-    
-    def __repr__(self):
-        return f'(id={self.id}, businessName={self.business_name} email={self.email_address} mobile_number={self.mobile_number} product_list={self.product_list} )'
-
-class Product(db.Model):
-    __tablename__ = 'products'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    description = db.Column(db.String)
-    price = db.Column(db.Numeric(precision=10, scale=2))
-    vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.id'))
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
-    image = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-
-    __table_args__ = (UniqueConstraint('name', name='product_name_unique_constraint'),)
-
-    vendor = db.relationship('Vendor', back_populates='products')
-    category = db.relationship('Category', back_populates='products')
-    orders = db.relationship('Order', back_populates='product')
-
-    def __repr__(self):
-        return f'(id={self.id}, name={self.name} description={self.description} price={self.price} price={self.image} user_id={self.user_id} category_id={self.category_id} )'
-
-class Category(db.Model):
-    __tablename__ = 'categories'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    image = db.Column(db.String)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-
-    __table_args__ = (UniqueConstraint('name', name='category_name_unique_constraint'),)
-
-    products = db.relationship('Product', back_populates='category', cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f'(id={self.id}, name={self.name})'
-
-class Cart(db.Model):
-    __tablename__ = 'carts'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-
-    user = db.relationship('User', back_populates='cart')
-    cartItems = db.relationship('CartItem', backref='cart', cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f'(id={self.id}, user_id={self.user_id})'
-
-class CartItem(db.Model):
-    __tablename__ = 'cart_items'
-
-    id = db.Column(db.Integer, primary_key=True)
-    cart_id = db.Column(db.Integer, db.ForeignKey('carts.id'))
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
-    quantity = db.Column(db.Integer)
-    added_at = db.Column(db.DateTime, server_default=db.func.now())
+cart_items_schema = api.model('cart_items', {
+    "cart_items": fields.List(fields.Nested(cart_item_output_schema)),
+})
 
 
-    def __repr__(self):
-        return f'(id={self.id}, cart_id={self.cart_id}, photo_id={self.photo_id}, quantity={self.quantity})'
+carts_output_schema = api.model('carts_output',{
+    "id": fields.Integer,
+    "user_id":fields.Integer,
+    "created_at": fields.DateTime,
+    "updated_at": fields.DateTime
 
-class Order(db.Model):
-    __tablename__ = 'orders'
+})
 
-    id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id')) 
-    cart_item_id = db.Column(db.Integer, db.ForeignKey('cart_items.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    purchased_at = db.Column(db.DateTime, server_default=db.func.now())
-    quantity = db.Column(db.Integer)
-    status = db.Column(db.String)
-    order_date = db.Column(db.DateTime, onupdate=db.func.now())
-    
-    # cart_item = db.relationship('CartItem', back_populates='order')
-    product = db.relationship('Product', back_populates='orders')
-    user = db.relationship('User', back_populates='orders')
+carts_input_schema = api.model('carts_input',{
+    "user_id":fields.Integer,
+
+})
+
+cart_schema=api.model('carts',{
+    "carts": fields.List(fields.Nested(carts_output_schema)),
+})
 
 
-    @validates('cart_item')
-    def validate_cart_item(self, key, cart_item):
-        if cart_item.photo.user_id == self.user_id:
-            raise ValueError("You cannot buy your own photo.")
-        return cart_item
+vendor_input_schema = api.model('vendors',{
+    "id":fields.Integer,
+    "user_id" : fields.Integer, 
+    "fullnames" :fields.String,
+    "business_name" :fields.String,
+    "mobile_number" :fields.String,
+    "email_address" : fields.String,
+    "physical_address" : fields.String,
+    "latitude" : fields.String,
+    "longitude" : fields.String,
+    "product_list" : fields.String,
+    "image" : fields.String,
+    "created_at" : fields.DateTime,
+    "updated_at" : fields.DateTime, 
+
+})
+
+vendor_schema=api.model('vendor',{
+    "vendors": fields.List(fields.Nested(vendor_input_schema)) ,
+})
 
 
-    def __repr__(self):
-        return f'(id={self.id}, cart_item_id={self.cart_item_id}, user_id={self.user_id}, purchased_at={self.purchased_at})'
+product_input_schema = api.model('product', {
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "vendor_id": fields.Integer,
+    "category_id": fields.Integer,
+    "image": fields.String,
+    "price": fields.Integer,
+})
+product_schema = api.model("products", {
+    "products": fields.List(fields.Nested(product_input_schema))
+})
+
+order_input_schema = api.model('order', {
+    "id": fields.Integer,
+    "product_id": fields.Integer,
+    "cart_item_id": fields.Integer,
+    "cart_id": fields.Integer,
+    "user_id": fields.Integer,
+    "quantity": fields.Integer,
+    "status": fields.String,
+    "order_date": fields.DateTime,
+})
+order_schema = api.model('orders', {
+    "orders": fields.List(fields.Nested(order_input_schema))
+})
+
+
+
+
+# cart_item_input_schema = api.model('cart_item_input', {
+#     "product_id": fields.Integer(required=True),
+#     "quantity": fields.Integer(required=True),
+#     "cart_id": fields.Integer(required=True)
+# })
