@@ -58,6 +58,7 @@ category_schema = api.model('category',{
 categories_schema = api.model('category',{
     "id": fields.Integer,
     "name": fields.String,
+    "image": fields.String
 })
 photo_schema = api.model('photo',{
     "id": fields.Integer,

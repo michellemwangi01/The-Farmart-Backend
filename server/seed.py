@@ -4,6 +4,10 @@ from faker import Faker
 import random, locale
 from random import randint, choice as rc
 
+import os
+
+
+
 fake = Faker()
 with app.app_context():
     User.query.delete()
@@ -13,8 +17,9 @@ with app.app_context():
     Cart.query.delete()
     CartItem.query.delete()
 
-    categories = {
-        'Live Animals': 'photos/live_animals.jpg',
+
+    categories_local_images = {
+        'Live Animals': 'live_animals.jpg',
         'Meat & Poultry': 'photos/meat_poultry.jpg' ,
         'Dairy Products':'photos/dairy_products.jpg',
         'Eggs':'photos/eggs.jpg',
@@ -23,6 +28,18 @@ with app.app_context():
         'Grains & Cereals':'photos/grains_cereals.jpg',
         'Fish & Seafood products':'photos/seafood.jpg',
         'Animal Feed $ Supplements':'photos/animal_feed.jpg'
+    }
+
+    categories_online_images = {
+        'Live Animals': 'https://images.pexels.com/photos/422218/pexels-photo-422218.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+        'Meat & Poultry': 'https://images.unsplash.com/photo-1606677661991-446cea8ee182?auto=format&fit=crop&q=80&w=987&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' ,
+        'Dairy Products':'https://images.pexels.com/photos/1200667/pexels-photo-1200667.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+        'Eggs':'https://images.pexels.com/photos/1625385/pexels-photo-1625385.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+        'Fresh Produce':'https://images.unsplash.com/photo-1489450278009-822e9be04dff?auto=format&fit=crop&q=80&w=1172&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'Honey & Bee Products':'https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&q=80&w=987&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'Grains & Cereals':'https://images.unsplash.com/photo-1621956838481-f8f616950454?auto=format&fit=crop&q=80&w=987&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'Fish & Seafood products':'https://images.pexels.com/photos/2871757/pexels-photo-2871757.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+        'Animal Feed $ Supplements':'https://images.pexels.com/photos/1153756/pexels-photo-1153756.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
     }
 
     services = [
@@ -77,7 +94,7 @@ with app.app_context():
 
     print("🦸‍♀️ Seeding categories...")
     category_ids = []
-    for name, image in categories.items():
+    for name, image in categories_online_images.items():
         new_category = Category(
             name=name,
             image=image
