@@ -440,3 +440,29 @@ class CartItemResource(Resource):
         db.session.delete(cart_item)
         db.session.commit()
         return '', 204
+
+
+            #**********PUT &PATCH*******
+
+@ns.route('/categories/<int:id>')
+class CategoryResource(Resource):
+    @ns.expect(category_input_schema)
+    @ns.marshal_with(category_schema)
+    def put(self, id):
+        # Update a category by ID using request data
+        category = Category.query.get_or_404(id)
+        data = request.get_json()
+        category.name = data.get('name')
+        db.session.commit()
+        return category
+
+    @ns.expect(category_input_schema)
+    @ns.marshal_with(category_schema)
+    def patch(self, id):
+        # Partially update a category by ID using request data
+        category = Category.query.get_or_404(id)
+        data = request.get_json()
+        if 'name' in data:
+            category.name = data.get('name')
+        db.session.commit()
+        return category
