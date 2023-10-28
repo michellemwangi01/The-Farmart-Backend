@@ -495,3 +495,16 @@ class UserResource(Resource):
         # Update other user fields as needed
         db.session.commit()
         return user
+
+
+#carts
+@ns.route('/carts/<int:id>')
+class CartResource(Resource):
+    @ns.marshal_with(cart_schema)
+    def put(self, id):
+        # Update a cart by ID (e.g., not typically updated)
+        cart = Cart.query.get_or_404(id)
+        # Update cart properties as needed
+        db.session.commit()
+        return cart
+# Additional routes for handling specific use cases or edge-cases may be added here...
