@@ -564,3 +564,36 @@ class ProductResource(Resource):
         # Update other product fields as needed
         db.session.commit()
         return product
+
+
+@ns.route('/vendors/<int:id>')
+class VendorResource(Resource):
+    @ns.expect(vendor_input_schema)
+    @ns.marshal_with(vendor_schema)
+    def put(self, id):
+        # Update a vendor by ID using request data
+        vendor = Vendor.query.get_or_404(id)
+        data = request.get_json()
+        vendor.user_id = data.get('user_id')
+        vendor.fullnames = data.get('fullnames')
+        vendor.business_name = data.get('business_name')
+        vendor.mobile_number = data.get('mobile_number')
+        vendor.email_address = data.get('email_address')
+        vendor.physical_address = data.get('physical_address')
+        vendor.map_location = data.get('map_location')
+        vendor.product_list = data.get('product_list')
+        vendor.image = data.get('image')
+        db.session.commit()
+        return vendor
+
+    @ns.expect(vendor_input_schema)
+    @ns.marshal_with(vendor_schema)
+    def patch(self, id):
+        # Partially update a vendor by ID using request data
+        vendor = Vendor.query.get_or_404(id)
+        data = request.get_json()
+        if 'user_id' in data:
+            vendor.user_id = data.get('user_id')
+        # Update other vendor fields as needed
+        db.session.commit()
+        return vendor
