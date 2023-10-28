@@ -444,6 +444,7 @@ class CartItemResource(Resource):
 
             #**********PUT &PATCH*******
 
+#category
 @ns.route('/categories/<int:id>')
 class CategoryResource(Resource):
     @ns.expect(category_input_schema)
@@ -466,3 +467,31 @@ class CategoryResource(Resource):
             category.name = data.get('name')
         db.session.commit()
         return category
+
+@ns.route('/users/<int:id>')
+class UserResource(Resource):
+    @ns.expect(user_input_schema)
+    @ns.marshal_with(user_schema)
+    def put(self, id):
+        # Update a user by ID using request data
+        user = User.query.get_or_404(id)
+        data = request.get_json()
+        user.username = data.get('username')
+        user.email = data.get('email')
+        # Update other user fields as needed
+        db.session.commit()
+        return user
+
+    @ns.expect(user_input_schema)
+    @ns.marshal_with(user_schema)
+    def patch(self, id):
+        # Partially update a user by ID using request data
+        user = User.query.get_or_404(id)
+        data = request.get_json()
+        if 'username' in data:
+            user.username = data.get('username')
+        if 'email' in data:
+            user.email = data.get('email')
+        # Update other user fields as needed
+        db.session.commit()
+        return user
