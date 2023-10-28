@@ -534,3 +534,33 @@ class CartItemResource(Resource):
             cart_item.quantity = data.get('quantity')
         db.session.commit()
         return cart_item
+
+
+@ns.route('/products/<int:id>')
+class ProductResource(Resource):
+    @ns.expect(product_input_schema)
+    @ns.marshal_with(product_schema)
+    def put(self, id):
+        # Update a product by ID using request data
+        product = Product.query.get_or_404(id)
+        data = request.get_json()
+        product.name = data.get('name')
+        product.description = data.get('description')
+        product.price = data.get('price')
+        product.vendor_id = data.get('vendor_id')
+        product.category_id = data.get('category_id')
+        product.image = data.get('image')
+        db.session.commit()
+        return product
+
+    @ns.expect(product_input_schema)
+    @ns.marshal_with(product_schema)
+    def patch(self, id):
+        # Partially update a product by ID using request data
+        product = Product.query.get_or_404(id)
+        data = request.get_json()
+        if 'name' in data:
+            product.name = data.get('name')
+        # Update other product fields as needed
+        db.session.commit()
+        return product
