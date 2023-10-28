@@ -597,3 +597,39 @@ class VendorResource(Resource):
         # Update other vendor fields as needed
         db.session.commit()
         return vendor
+
+
+@ns.route('/orders/<int:id>')
+class OrderResource(Resource):
+    @ns.expect(order_input_schema)
+    @ns.marshal_with(order_schema)
+    def put(self, id):
+        # Update an order by ID using request data
+        order = Order.query.get_or_404(id)
+        data = request.get_json()
+        order.product_id = data.get('product_id')
+        order.cart_item_id = data.get('cart_item_id')
+        order.user_id = data.get('user_id')
+        order.quantity = data.get('quantity')
+        order.status = data.get('status')
+        db.session.commit()
+        return order
+
+    @ns.expect(order_input_schema)
+    @ns.marshal_with(order_schema)
+    def patch(self, id):
+        # Partially update an order by ID using request data
+        order = Order.query.get_or_404(id)
+        data = request.get_json()
+        if 'product_id' in data:
+            order.product_id = data.get('product_id')
+        if 'cart_item_id' in data:
+            order.cart_item_id = data.get('cart_item_id')
+        if 'user_id' in data:
+            order.user_id = data.get('user_id')
+        if 'quantity' in data:
+            order.quantity = data.get('quantity')
+        if 'status' in data:
+            order.status = data.get('status')
+        db.session.commit()
+        return order
