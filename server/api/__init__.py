@@ -4,7 +4,7 @@ import datetime
 from flask import Flask, send_from_directory, url_for
 from sqlalchemy import MetaData
 from werkzeug.security import generate_password_hash, check_password_hash
-from .models import User, db
+from .models import *
 from flask_restx import Api, Resource, Namespace, fields
 from sqlalchemy.exc import SQLAlchemyError
 from flask_migrate import Migrate
@@ -35,11 +35,11 @@ db.init_app(app)
 
 
 
-CORS(app, resources={r"/farmart/categories/*": {"origins": "http://localhost:3000"}})
+CORS(app)
 
 ma = Marshmallow(app)
 migrate = Migrate(app, db)
 api = Api(app)
-
+ma = Marshmallow(app)
 
 from api import routes, models

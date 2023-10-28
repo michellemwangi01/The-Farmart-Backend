@@ -1,14 +1,22 @@
 from api import app, uuid
-from api.models import User, Category, Product, Order, Cart, CartItem, db
+from api.models import User, Category, Product, Order, Cart, CartItem, Vendor, db
 from faker import Faker
 import random, locale
 from random import randint, choice as rc
+from faker.providers import BaseProvider
 
 import os
 
+class CoordinateProvider(BaseProvider):
+    def coordinates(self):
+        # Generate random coordinates (latitude and longitude)
+        latitude = fake.coordinate(center=0.0, radius=90.0)  # Adjust the radius as needed
+        longitude = fake.coordinate(center=0.0, radius=180.0)  # Adjust the radius as needed
+        return (latitude, longitude)
 
 
 fake = Faker()
+fake.add_provider(CoordinateProvider)
 with app.app_context():
     User.query.delete()
     Category.query.delete()
@@ -16,6 +24,7 @@ with app.app_context():
     Order.query.delete()
     Cart.query.delete()
     CartItem.query.delete()
+
 
 
     categories_local_images = {
@@ -70,6 +79,8 @@ with app.app_context():
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv7l08_sO2B7_9VgXDy-gB56AsfzrBHpv4bA&usqp=CAU",
     ]
 
+
+    statuses = ["Fulfilled", "Pending", "Preparing", "On delivery"]
     print("🦸‍♀️ Seeding users...")
     user_ids = []
     for i in range(40):
@@ -103,64 +114,95 @@ with app.app_context():
         db.session.commit()
         category_ids.append(new_category.id)
     print("🦸‍♀️ Seeding categories complete")
+
+
+    print("🦸‍♀️ Seeding vendors...")
+    vendor_ids = []
+    for i in range(5):
+        random_coordinates = fake.coordinates()
+        firstname = fake.unique.first_name()
+        lastname = fake.unique.last_name()
+        new_vendor = Vendor(
+            fullnames=f'{first_name}{last_name}',
+            business_name=fake.unique.company(),
+            mobile_number = fake.unique.phone_number(),
+            email_address = f'{first_name}_{last_name}@mail.com',
+            physical_address = fake.address(),
+            product_list = fake.sentence(),
+            latitude = random_coordinates[0],
+            longitude = random_coordinates[1]
+        )
+        db.session.add(new_vendor)
+        db.session.commit()
+        vendor_ids.append(new_vendor.id)
+    print("🦸‍♀️ Seeding vendors complete")
+
+
+   
+
+
+    print("🦸‍♀️ Seeding Products...")
+    Product_ids = []
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    for i in range(20):
+        new_Product = Product(
+            name=fake.unique.word(),
+            description=fake.unique.sentence(),
+            price = round(random.uniform(1000.00, 10000.00), 2),
+            vendor_id=rc(vendor_ids),
+            category_id=rc(category_ids),
+            image=rc(list(categories_online_images.items()))[1]
+        )
+        db.session.add(new_Product)
+        db.session.commit()
+        Product_ids.append(new_Product.id)
+    print("🦸‍♀️ Seeding products complete")
+
+
+    print("🦸‍♀️ Seeding carts...")
+    cart_ids = []
+    for user_id in user_ids:
+        new_cart = Cart(
+            user_id=user_id,
+        )
+        db.session.add(new_cart)
+        db.session.commit()
+        cart_ids.append(new_cart.id)
+    print("🦸‍♀️ Seeding carts complete")
     
 
-    # print("🦸‍♀️ Seeding Products...")
-    # Product_ids = []
-    # locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-    # for i in range(len(users_images)):
-    #     new_Product = Product(
-    #         name=fake.unique.word(),
-    #         description=fake.unique.sentence(),
-    #         price = round(random.uniform(1000.00, 10000.00), 2),
-    #         user_id=rc(user_ids),
-    #         category_id=rc(category_ids),
-    #         image=rc(users_images)
-    #     )
-    #     db.session.add(new_Product)
-    #     db.session.commit()
-    #     Product_ids.append(new_Product.id)
 
-    # print("🦸‍♀️ Seeding carts, cart items, and Orders...")
-
-    # for _ in range(5):
-    #     # Create a cart for a random user
-    #     user_id = random.choice(user_ids)
-    #     cart = Cart(user_id=user_id)
-    #     db.session.add(cart)
-    #     db.session.commit()
-
-    #     for _ in range(5):
-    #         while True:
-    #             # Create a cart item for a random Product in the cart
-    #             Product_id = random.choice(Product_ids)
-    #             cart_item = CartItem(
-    #                 cart=cart,
-    #                 Product_id=Product_id,
-    #                 quantity=random.randint(1, 5),
-    #             )
-    #             db.session.add(cart_item)
-    #             db.session.commit()
-
-    #             # Check if the user is trying to buy their own Product
-    #             if Product.query.get(Product_id).user_id == user_id:
-    #                 print(f"User {user_id} tried to buy their own Product. Retrying...")
-    #                 db.session.rollback()
-    #             else:
-    #                 break
-
-    #         # Create a Order for the cart item
-    #         Order = Order(
-    #             cart_item=cart_item,
-    #             user_id=user_id,
-    #             Product_id=random.randint(1,12)
-    #         )
-    #         db.session.add(Order)
-    #         db.session.commit()
-    #         print(f"Order successful: User {user_id} bought a Product.")
-
-    # print("🦸‍♀️ Seeding complete!")
-
-    # print("🦸‍♀️ Seeding complete!")
+    print("🦸‍♀️ Seeding cart items,")
+    cart_items = []
+    for cart in cart_ids:
+        # Create a cart item for a random Product in the cart
+        Product_id = random.choice(Product_ids)
+        new_cart_item = CartItem(
+            cart_id=rc(cart_ids),
+            product_id=rc(Product_ids),
+            quantity=random.randint(1, 5),
+        )
+        db.session.add(new_cart_item)
+        db.session.commit()
+        cart_items.append(new_cart_item)
+    print("🦸‍♀️ Seeding cart items complete")
 
 
+    print("🦸‍♀️ Seeding orders...")
+    for cart_item in cart_items:
+        new_order = Order(
+            product_id = cart_item.product_id,
+            user_id = cart_item.cart_id,
+            quantity = cart_item.quantity,
+            status = rc(statuses)
+        )
+        db.session.add(new_order)
+        db.session.commit()
+    print("🦸‍♀️ Seeding orders complete")
+
+    print("🦸‍♀️ Seeding complete!")
+
+
+
+
+  
