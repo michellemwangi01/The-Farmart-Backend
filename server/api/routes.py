@@ -174,8 +174,13 @@ class Vendors(Resource):
   
 @ns_vendor.route('/vendors/<int:id>')
 class VendorResource(Resource):
+    # @jwt_required()
     @ns.marshal_with(vendor_schema)
     def get(self, id):
+        # current_user = get_jwt_identity()
+        # user = User.query.filter_by(id = current_user).first()
+        # if user.isAdmin == False:
+        #     return {'message':'You are not allowed to view this page'}, 404
         vendor = Vendor.query.get_or_404(id)
         return vendor
     
@@ -185,15 +190,8 @@ class VendorResource(Resource):
         # Update a vendor by ID using request data
         vendor = Vendor.query.get_or_404(id)
         data = request.get_json()
-        vendor.user_id = data.get('user_id')
-        vendor.fullnames = data.get('fullnames')
-        vendor.business_name = data.get('business_name')
-        vendor.mobile_number = data.get('mobile_number')
-        vendor.email_address = data.get('email_address')
-        vendor.physical_address = data.get('physical_address')
-        vendor.map_location = data.get('map_location')
-        vendor.product_list = data.get('product_list')
-        vendor.image = data.get('image')
+        for attr in data:
+            setattr(vendor, attr, data[attr])
         db.session.commit()
         return vendor
 
@@ -203,9 +201,11 @@ class VendorResource(Resource):
         # Partially update a vendor by ID using request data
         vendor = Vendor.query.get_or_404(id)
         data = request.get_json()
-        if 'user_id' in data:
-            vendor.user_id = data.get('user_id')
-        # Update other vendor fields as needed
+        for attr in data:
+            setattr(vendor, attr, data[attr])
+        # if 'user_id' in data:
+        #     vendor.user_id = data.get('user_id')
+        # # Update other vendor fields as needed
         db.session.commit()
         return vendor
 
@@ -365,14 +365,13 @@ class CategoryResource(Resource):
         # Partially update a category by ID using request data
         category = Category.query.get_or_404(id)
         data = request.get_json()
-        if 'name' in data:
-            category.name = data.get('name')
+        for attr in data:
+            setattr(category, attr, data[attr])
         db.session.commit()
         return category
     
 
 # ----------------------------------------------  O R D E R S   R O U T E S -----------------------------------------------
-#  !!missing post route!!
 
 @ns_order.route('/orders')
 class OrderList(Resource):
@@ -430,16 +429,8 @@ class OrderResource(Resource):
         # Partially update an order by ID using request data
         order = Order.query.get_or_404(id)
         data = request.get_json()
-        if 'product_id' in data:
-            order.product_id = data.get('product_id')
-        if 'cart_item_id' in data:
-            order.cart_item_id = data.get('cart_item_id')
-        if 'user_id' in data:
-            order.user_id = data.get('user_id')
-        if 'quantity' in data:
-            order.quantity = data.get('quantity')
-        if 'status' in data:
-            order.status = data.get('status')
+        for attr in data:
+            setattr(order, attr, data[attr])
         db.session.commit()
         return order
 
@@ -549,10 +540,8 @@ class UserResource(Resource):
         # Partially update a user by ID using request data
         user = User.query.get_or_404(id)
         data = request.get_json()
-        if 'username' in data:
-            user.username = data.get('username')
-        if 'email' in data:
-            user.email = data.get('email')
+        for attr in data:
+            setattr(user, attr, data[attr])
         # Update other user fields as needed
         db.session.commit()
         return user
@@ -641,10 +630,8 @@ class CartItemResource(Resource):
         # Partially update a cart item by ID using request data
         cart_item = CartItem.query.get_or_404(id)
         data = request.get_json()
-        if 'product_id' in data:
-            cart_item.product_id = data.get('product_id')
-        if 'quantity' in data:
-            cart_item.quantity = data.get('quantity')
+        for attr in data:
+            setattr(cart_item, attr, data[attr])
         db.session.commit()
         return cart_item
     

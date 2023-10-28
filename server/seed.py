@@ -84,6 +84,18 @@ with app.app_context():
     statuses = ["Fulfilled", "Pending", "Preparing", "On delivery"]
     print("🦸‍♀️ Seeding users...")
     user_ids = []
+    admin_user = User(
+        username = 'Admin',
+        first_name = 'Admin',
+        last_name = 'Admin',
+        public_id = str(uuid.uuid4()),
+        isAdmin = 1,
+        email='admin',
+        address = 'admin'
+        )
+    admin_user.set_password('Admin')
+    db.session.add(admin_user)
+    db.session.commit()
     for i in range(40):
         first_name = fake.unique.first_name()
         last_name = fake.unique.last_name()

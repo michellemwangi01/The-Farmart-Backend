@@ -25,6 +25,7 @@ class User(db.Model):
     email = db.Column(db.String)
     password_hash = db.Column(db.String)
     profile_pic = db.Column(db.String(255))
+    isAdmin = db.Column(db.Boolean,default=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 

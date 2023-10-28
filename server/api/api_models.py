@@ -78,28 +78,8 @@ categories_schema = api.model('categories',{
     "id": fields.Integer,
     "name": fields.String,
 })
-photo_schema = api.model('photo',{
-    "id": fields.Integer,
-    "name": fields.String,
-    "description": fields.String,
-    "price": fields.Integer,
-    "image": fields.String,
-    "user": fields.Nested(users_schema),
-    "category": fields.Nested(categories_schema)
-})
 
-photo_input_schema = api.model('photo_input',{
-    "name": fields.String,
-    "description": fields.String,
-    "price": fields.Integer,
-    "image": fields.String,
-    "user_id": fields.Integer,
-    "category_id": fields.Integer
-})
-class CartItemInputSchema(Schema):
-    product_id = fields.Integer(required=True)
-    quantity = fields.Integer(required=True)
-    cart_id = fields.Integer(required=True)
+
 
 cart_item_input_schema = api.model('cart_item_input', {
     "product_id": fields.Integer(required=True),
@@ -119,11 +99,6 @@ transaction_input_schema = api.model('transaction_input', {
 
 
 
-# cart_items_schema = api.model('cart_items', {
-#     "cart_items": fields.List(fields.Nested(cart_item_output_schema)),
-# })
-
-
 carts_output_schema = api.model('carts_output',{
     "id": fields.Integer,
     "user_id":fields.Integer,
@@ -137,9 +112,6 @@ carts_input_schema = api.model('carts_input',{
     "user_id":fields.Integer,
 
 })
-
-
-
 
 vendor_input_schema = api.model('vendor_input',{
     "user_id" : fields.Integer, 
