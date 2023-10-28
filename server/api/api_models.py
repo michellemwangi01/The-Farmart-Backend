@@ -33,7 +33,13 @@ user_input_schema = api.model('user_input',{
     "password": fields.String,
     "repeatpassword": fields.String,
     "email": fields.String,
+    "profile_pic": fields.String,
+    "first_name": fields.String,
+    "last_name": fields.String,
+    "address": fields.String,
+    "phone_number": fields.String,
 })
+
 user_login_schema = api.model('user_login',{
     "username": fields.String,
     "password": fields.String,
@@ -42,6 +48,7 @@ user_login_schema = api.model('user_login',{
 
 category_input_schema = api.model('category_input',{
     "name": fields.String,
+    'image': fields.String
 })
 
 
@@ -135,15 +142,14 @@ carts_input_schema = api.model('carts_input',{
 
 
 vendor_input_schema = api.model('vendor_input',{
-    "id":fields.Integer,
     "user_id" : fields.Integer, 
     "fullnames" :fields.String,
     "business_name" :fields.String,
     "mobile_number" :fields.String,
     "email_address" : fields.String,
     "physical_address" : fields.String,
-    "latitude" : fields.String,
-    "longitude" : fields.String,
+    "latitude" : fields.Float,
+    "longitude" : fields.Float,
     "product_list" : fields.String,
     "image" : fields.String,
 
@@ -160,7 +166,6 @@ vendors_schema=api.model('vendors',{
 
 
 product_input_schema = api.model('product_input', {
-    "id": fields.Integer,
     "name": fields.String,
     "description": fields.String,
     "vendor_id": fields.Integer,
@@ -213,14 +218,10 @@ product_schema = api.model("products", {
 })
 
 order_input_schema = api.model('order_input', {
-    "id": fields.Integer,
     "product_id": fields.Integer,
-    "cart_item_id": fields.Integer,
-    "cart_id": fields.Integer,
     "user_id": fields.Integer,
     "quantity": fields.Integer,
     "status": fields.String,
-    "order_date": fields.DateTime,
 })
 
 order_schema = api.model('order', {
@@ -250,8 +251,8 @@ vendor_schema=api.model('vendor',{
     "mobile_number" :fields.String,
     "email_address" : fields.String,
     "physical_address" : fields.String,
-    "latitude" : fields.String,
-    "longitude" : fields.String,
+    "latitude" : fields.Float,
+    "longitude" : fields.Float,
     "product_list" : fields.String,
     "image" : fields.String,
     "created_at" : fields.DateTime,

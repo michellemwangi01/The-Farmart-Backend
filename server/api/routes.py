@@ -5,7 +5,7 @@ from api import app, ma, api
 from .api_models import *
 from .models import Category, User, Cart, CartItem, Product, Vendor,Order
 import os
-from functools import wraps
+from functools import wraps  
 from marshmallow.exceptions import ValidationError
 from flask_uploads import UploadSet, configure_uploads, IMAGES, configure_uploads
 from flask_wtf import FlaskForm
@@ -15,7 +15,7 @@ from flask_jwt_extended import JWTManager, create_access_token, create_refresh_t
 
 
 
-ns = Namespace('home')
+ns = Namespace('authorization')
 ns_vendor = Namespace('vendors')
 ns_user = Namespace('users')
 ns_category = Namespace('categories')
@@ -36,24 +36,112 @@ configure_uploads(app, photos)
 jwt = JWTManager(app)
 
 
+# ---------------------------------------------- A U T H E N T I C A T I O N   R O U T E S -----------------------------------------------
 
+def verify_jwt_token(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            get_jwt_identity()
+            return func(*args, **kwargs)
+        except Exception as e:
+            return {'message': 'Unauthorized'}, 401
+    return wrapper
+
+
+@ns.route('/signup')
+class Signup(Resource):
+    @ns.expect(user_input_schema)
+    # @ns.marshal_with(users_schema)
+    def post(self):
+        data = request.get_json()
+        print("signup",data)
+        if not data:
+            return {"message":"Data not found!"},404
+        
+        required_fields = ['username', 'email', 'password', 'repeatpassword', 'profile_pic', 'first_name', 'last_name', 'address', 'phone_number']
+        for field in required_fields:
+            if field not in data or data[field]=='':
+                return {'message': f'Missing required field: {field}'}, 400
+            
+        if data['password'] != data['repeatpassword']:
+            return {'message': "Passwords Do No Match"}, 404
+        
+        new_user = User(
+            username=data['username'],
+            email=data['email'],
+            public_id=str(uuid.uuid4()),
+            profile_pic = data['profile_pic'],
+            first_name = data['first_name'],
+            last_name = data['last_name'],
+            address = data['address'],
+            phone_number = data['phone_number']
+        )
+        new_user.set_password(data['password'])
+        print(f'new user:{new_user}')
+        new_user.set_password(data['password'])
+        db.session.add(new_user)
+        db.session.commit()
+        print("new added user",new_user)
+
+        user_dict = {
+            key: getattr(new_user,key)
+            for key in ["username", "email", "public_id", "profile_pic", "first_name", "last_name", "address", "phone_number"]
+        }
+
+        # create cart for user
+        new_cart = Cart(
+            user_id = new_user.id
+        )
+        db.session.add(new_cart)
+        db.session.commit()
+        return user_dict, 201
+
+
+@ns.route('/login')
+class Login(Resource):
+    @ns.expect(user_login_schema)
+    def post(self):
+        data = request.get_json()
+
+        if not data or not data['username'] or not data['password']:
+            return {'message': 'Could Not Verify'}, 401
+
+        user = User.query.filter_by(username=data['username']).first()
+
+        if not user:
+            return {'message': 'Could Not Verify'}, 401
+
+
+        if check_password_hash(user.password_hash, data['password']):
+            access_token = create_access_token(identity=user.id)
+            refresh_token = create_refresh_token(identity=user.id)
+            response_data = {
+                'access_token': access_token,
+                'username': user.username,
+                 'user_id': user.id
+            }
+
+            # Check if the user has a cart, if not, create one
+            user_cart = Cart.query.filter_by(user_id=user.id).first()
+            if not user_cart:
+                try:
+                    new_cart = Cart(user=user)
+                    db.session.add(new_cart)
+                    db.session.commit()
+                    print(f"Cart created for user {user.id}")
+                except Exception as e:
+                    db.session.rollback()
+                    return {'message': f'Error creating cart for user {user.id}: {str(e)}'}, 500
+
+            return response_data, 201
+        else:
+            return {'message': 'Invalid credentials'}, 401
+
+  
 
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
-# Delete a vendor
-@ns_vendor.route('/vendors/<int:id>')
-class VendorResource(Resource):
-    @ns.marshal_with(vendor_schema)
-    def get(self, id):
-        vendor = Vendor.query.get_or_404(id)
-        return vendor
 
-    # @ns.response(204, 'Vendor deleted')
-    def delete(self, id):
-        vendor = Vendor.query.get_or_404(id)
-        db.session.delete(vendor)
-        db.session.commit()
-        return {"message":"product successfully deleted"}, 200
-    
 
 @ns_vendor.route('/vendors')
 class Vendors(Resource):
@@ -62,7 +150,7 @@ class Vendors(Resource):
         vendors = Vendor.query.all()
         return vendors
 
-    @ns.expect(vendors_schema)
+    @ns.expect(vendor_input_schema)
     @ns.marshal_with(vendors_schema, code=201)
     def post(self):
         data = request.get_json()
@@ -74,13 +162,22 @@ class Vendors(Resource):
             mobile_number=data['mobile_number'],
             email_address=data['email_address'],
             physical_address=data['physical_address'],
-            latitude=data['map_location'],
+            latitude=data['latitude'],
+            longitude=data['longitude'],
             product_list=data['product_list'],
             image=data['image']
         )
         db.session.add(new_vendor)
         db.session.commit()
         return new_vendor, 201
+    
+  
+@ns_vendor.route('/vendors/<int:id>')
+class VendorResource(Resource):
+    @ns.marshal_with(vendor_schema)
+    def get(self, id):
+        vendor = Vendor.query.get_or_404(id)
+        return vendor
     
     @ns.expect(vendor_input_schema)
     @ns.marshal_with(vendor_schema)
@@ -111,6 +208,14 @@ class Vendors(Resource):
         # Update other vendor fields as needed
         db.session.commit()
         return vendor
+
+    # @ns.response(204, 'Vendor deleted')
+    def delete(self, id):
+        vendor = Vendor.query.get_or_404(id)
+        db.session.delete(vendor)
+        db.session.commit()
+        return {"message":"product successfully deleted"}, 200
+    
 
 
 # ----------------------------------------------  P R O D U C T S   R O U T E S -----------------------------------------------
@@ -276,6 +381,20 @@ class OrderList(Resource):
         orders = Order.query.all()
         return orders
 
+    @ns.expect(order_input_schema)
+    @ns.marshal_with(order_schema)
+    def post(self):
+        data = request.get_json()
+        # Validation and processing logic
+        new_order = Order(
+            user_id = data['user_id'],
+            quantity=data['quantity'],
+            status=data['status'],
+            product_id=data['product_id'],
+        )
+        db.session.add(new_order)
+        db.session.commit()
+        return new_order, 201
 
 @ns_order.route('/orders/<int:id>')
 class OrderResource(Resource):
@@ -386,6 +505,13 @@ class Users(Resource):
         )
         new_user.set_password(data['password'])
         db.session.add(new_user)
+        db.session.commit()
+
+        # create cart for user
+        new_cart = Cart(
+            user_is = new_user.id
+        )
+        db.session.add(new_cart)
         db.session.commit()
         return new_user, 201
     
@@ -565,41 +691,4 @@ def get_image(filename):
 
 
 
-# ---------------------------------------------- A U T H E N T I C A T I O N   R O U T E S -----------------------------------------------
-
-def verify_jwt_token(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            get_jwt_identity()
-            return func(*args, **kwargs)
-        except Exception as e:
-            return {'message': 'Unauthorized'}, 401
-    return wrapper
-
-@ns.route('/signup')
-class Signup(Resource):
-    @ns.expect(user_input_schema)
-    @ns.marshal_with(users_schema)
-    def post(self):
-        data = request.get_json()
-        # print("signup",data)
-        if data['password'] == data['repeatpassword']:
-            if data:
-                new_user = User(
-                    username=data['username'],
-                    email=data['email'],
-                    public_id=str(uuid.uuid4())
-                )
-                new_user.set_password(data['password'])
-                print(f'new user:{new_user}')
-                new_user.set_password(data['password'])
-                db.session.add(new_user)
-                db.session.commit()
-                print("new added user",new_user)
-                return new_user, 201
-            else:
-                return {'message': "No data found"}, 404
-        else:
-            return {'message': "No data found"}, 404
-        
+   

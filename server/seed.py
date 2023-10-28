@@ -24,9 +24,10 @@ with app.app_context():
     Order.query.delete()
     Cart.query.delete()
     CartItem.query.delete()
+    Vendor.query.delete()
 
 
-
+    email_suffix =  ['gmail','yahoo','outlook','iCloudMail', 'email']
     categories_local_images = {
         'Live Animals': 'live_animals.jpg',
         'Meat & Poultry': 'photos/meat_poultry.jpg' ,
@@ -95,11 +96,11 @@ with app.app_context():
             address = fake.unique.address(),
             phone_number =f'{fake.unique.phone_number()}'
         )
-        new_user.email = f'{new_user.username}@mail.com'
+        new_user.email = f'{new_user.username}@{rc(email_suffix)}.com'
         db.session.add(new_user)
         db.session.commit()
         user_ids.append(new_user.id)
-    print("🦸‍♀️ Seeding users complete...")
+    print("🦸‍♀️ Seeding users complete")
 
 
 
@@ -118,15 +119,15 @@ with app.app_context():
 
     print("🦸‍♀️ Seeding vendors...")
     vendor_ids = []
-    for i in range(5):
+    for i in range(9):
         random_coordinates = fake.coordinates()
-        firstname = fake.unique.first_name()
-        lastname = fake.unique.last_name()
+        fullname = f'{fake.unique.first_name()} {fake.unique.last_name()}'
         new_vendor = Vendor(
-            fullnames=f'{first_name}{last_name}',
+            user_id=rc(user_ids),
+            fullnames=fullname,
             business_name=fake.unique.company(),
             mobile_number = fake.unique.phone_number(),
-            email_address = f'{first_name}_{last_name}@mail.com',
+            email_address = f'{fullname}@{rc(email_suffix)}.com',
             physical_address = fake.address(),
             product_list = fake.sentence(),
             latitude = random_coordinates[0],
