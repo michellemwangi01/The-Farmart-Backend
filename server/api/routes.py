@@ -141,7 +141,7 @@ class Login(Resource):
  
 @ns.route('/farmartpayment')
 class MakePayment(Resource):
-    def post():
+    def post(self):
         data = request.get_json()
         if data:
             print(data)
