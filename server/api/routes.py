@@ -169,9 +169,9 @@ class MakePayment(Resource):
             return jsonify({'message': 'Invalid request data'}), 400
 
 
-       
+
 @ns.route('/get_payment_confirmation_details')
-class GetPaymentConfirmation:
+class GetPaymentConfirmation(Resource):
     def get(self):
         global paymentConfirmationDetails
         if paymentConfirmationDetails:
