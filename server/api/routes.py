@@ -17,7 +17,9 @@ photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
 jwt = JWTManager(app)
 
-ns = Namespace('authorization')
+
+
+ns = Namespace('authorization', description='Authorization & Payment related operations')
 ns_vendor = Namespace('vendors')
 ns_user = Namespace('users')
 ns_category = Namespace('categories')
@@ -34,6 +36,10 @@ api.add_namespace(ns_product)
 api.add_namespace(ns_user)
 api.add_namespace(ns_vendor)
 
+# ----------------------------------------------------- G L O B A L  V A R I A B L E S -----------------------------------------------
+
+
+paymentConfirmationDetails = None
 
 
 # ---------------------------------------------- A U T H E N T I C A T I O N   R O U T E S -----------------------------------------------
@@ -138,6 +144,9 @@ class Login(Resource):
         else:
             return {'message': 'Invalid credentials'}, 401
 
+
+# ----------------------------------------------  P A Y M E N T   R O U T E S -----------------------------------------------
+
  
 @ns.route('/farmartpayment')
 class MakePayment(Resource):
@@ -153,9 +162,24 @@ class MakePayment(Resource):
         #     }
             print("!!!!!!Webhook received and processed successfully!!!!!!!")
             print(f"---------->Data:{data}")
+            global paymentConfirmationDetails
+            paymentConfirmationDetails = data
             return data, 200
         else:
             return jsonify({'message': 'Invalid request data'}), 400
+
+
+       
+@ns.route('/get_payment_confirmation_details')
+class GetPaymentConfirmation:
+    def get(self):
+        global paymentConfirmationDetails
+        if paymentConfirmationDetails:
+            return paymentConfirmationDetails, 200
+        else:
+             return jsonify({'message': 'No payment confirmation data available'}), 404 
+        
+        
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
 
 
