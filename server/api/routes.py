@@ -147,7 +147,7 @@ class MakePayment(Resource):
             payment_details = data['Body']['stkCallback']
             if payment_details:
                 transaction_data = {
-                key: getattr(data,key)
+                key: getattr(payment_details,key)
                 for key in ["MerchantRequestID", "CheckoutRequestID", "ResultCode", "ResultDesc", "CallbackMetadata", "TinyPesaID", "ExternalReference", "Amount", "Msisdn"]
             }
                 print("Webhook received and processed successfully!")
