@@ -72,6 +72,7 @@ transaction_schema = api.model('transaction', {
 category_schema = api.model('category',{
     "id": fields.Integer,
     "name": fields.String,
+    "image": fields.String,
     "products": fields.List(fields.Nested(photo_category_schema))
 })
 categories_schema = api.model('categories',{
