@@ -151,7 +151,8 @@ class MakePayment(Resource):
         #         key: getattr(payment_details,key)
         #         for key in ["MerchantRequestID", "CheckoutRequestID", "ResultCode", "ResultDesc", "CallbackMetadata", "TinyPesaID", "ExternalReference", "Amount", "Msisdn"]
         #     }
-            print("Webhook received and processed successfully!")
+            print("!!!!!!Webhook received and processed successfully!!!!!!!")
+            print(f"---------->Data:{data}")
             return data, 200
         else:
             return jsonify({'message': 'Invalid request data'}), 400
