@@ -143,9 +143,15 @@ class Login(Resource):
 class MakePayment(Resource):
     def post(self):
         data = request.get_json()
-        if data:
-            print(data)
-            return jsonify({"message":"Webhoot received and processed successfully!" }), 200
+        if 'Body' in data and 'stkCallback' in data['Body']:
+            payment_details = data['Body']['stkCallback']
+            if payment_details:
+                transaction_data = {
+                key: getattr(data,key)
+                for key in ["MerchantRequestID", "CheckoutRequestID", "ResultCode", "ResultDesc", "CallbackMetadata", "TinyPesaID", "ExternalReference", "Amount", "Msisdn"]
+            }
+                print("Webhook received and processed successfully!")
+                return transaction_data, 200
         else:
             return jsonify({'message': 'Invalid request data'}), 400
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
