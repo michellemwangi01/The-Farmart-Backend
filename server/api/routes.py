@@ -20,13 +20,13 @@ jwt = JWTManager(app)
 
 
 ns = Namespace('authorization', description='Authorization & Payment related operations')
-ns_vendor = Namespace('vendors')
-ns_user = Namespace('users')
-ns_category = Namespace('categories')
-ns_product = Namespace('products')
-ns_cart = Namespace('cart')
-ns_cartitem = Namespace('cart items')
-ns_order = Namespace('orders')
+ns_vendor = Namespace('vendors', description='Vendor related operations')
+ns_user = Namespace('users', description='User & Payment related operations')
+ns_category = Namespace('categories', description='Category related operations')
+ns_product = Namespace('products', description='Product related operations')
+ns_cart = Namespace('cart', description='Cart related operations')
+ns_cartitem = Namespace('cart items', description='CartItem related operations')
+ns_order = Namespace('orders', description='Product Order related operations')
 api.add_namespace(ns)
 api.add_namespace(ns_cart)
 api.add_namespace(ns_cartitem)
@@ -39,8 +39,8 @@ api.add_namespace(ns_vendor)
 # ----------------------------------------------------- G L O B A L  V A R I A B L E S -----------------------------------------------
 
 
-paymentConfirmationDetails = None
-
+paymentConfirmationDetails = []
+print(paymentConfirmationDetails)
 
 # ---------------------------------------------- A U T H E N T I C A T I O N   R O U T E S -----------------------------------------------
 
@@ -163,21 +163,21 @@ class MakePayment(Resource):
             print("!!!!!!Webhook received and processed successfully!!!!!!!")
             print(f"---------->Data:{data}")
             global paymentConfirmationDetails
-            paymentConfirmationDetails = data
+            paymentConfirmationDetails.append(data)
             return data, 200
         else:
             return jsonify({'message': 'Invalid request data'}), 400
 
 
-
-@ns.route('/get_payment_confirmation_details')
+# <int:phonenumber>
+@ns.route('/get_payment_confirmation_details/')
 class GetPaymentConfirmation(Resource):
     def get(self):
         global paymentConfirmationDetails
-        if paymentConfirmationDetails:
+        if len(paymentConfirmationDetails) > 0:
             return paymentConfirmationDetails, 200
         else:
-             return jsonify({'message': 'No payment confirmation data available'}), 404 
+            return {'message': 'No payment confirmation data available'}, 404 
         
         
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
