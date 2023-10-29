@@ -144,10 +144,11 @@ class Order(db.Model):
     quantity = db.Column(db.Integer)
     status = db.Column(db.String)
     order_date = db.Column(db.DateTime, server_default=db.func.now())
-    
-    
+    payment_uid = db.Column(db.String, db.ForeignKey('payments.payment_uid'))
+
     product = db.relationship('Product', back_populates='orders')
     user = db.relationship('User', back_populates='orders')
+    payment = db.relationship('Payment', back_populates='order')
 
 
     @validates('cart_item')
@@ -159,3 +160,20 @@ class Order(db.Model):
 
     def __repr__(self):
         return f'(id={self.id}, product_id={self.product_id}, user_id={self.user_id}, purchased_at={self.purchased_at})'
+
+class Payment(db.Model):
+    __tablename__ = 'payments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    mpesa_receipt_code = db.Column(db.String)
+    payment_date = db.Column(db.String)
+    paid_by_number = db.Column(db.String)
+    amount_paid = db.Column(db.Integer)
+    payment_uid = db.Column(db.String)
+    date_created = db.Column(db.DateTime, server_default=db.func.now())
+
+    order = db.relationship('Order', back_populates='payment')
+    
+
+    def __repr__(self):
+        return f'(id={self.id}, payment_uid={self.payment_uid}, mpesa_receipt_code={self.mpesa_receipt_code}, amount_paid={self.amount_paid}, payment_date={self.payment_date})'

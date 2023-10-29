@@ -51,6 +51,14 @@ category_input_schema = api.model('category_input',{
     'image': fields.String
 })
 
+payments_schema = api.model('payments',{
+    'id':fields.Integer,
+    'mpesa_receipt_code':fields.String,
+    'payment_date':fields.String,
+    'paid_by_number':fields.String,
+    'amount_paid':fields.Integer,
+    'payment_uid':fields.String
+})
 
 photo_category_schema = api.model('photo_category',{
     "id": fields.Integer,

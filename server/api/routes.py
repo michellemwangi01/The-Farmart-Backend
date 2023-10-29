@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
@@ -19,7 +19,8 @@ jwt = JWTManager(app)
 
 
 
-ns = Namespace('authorization', description='Authorization & Payment related operations')
+ns_auth = Namespace('authorization', description='Authorization related operations')
+ns_payment = Namespace('payments', description='Payment related operations')
 ns_vendor = Namespace('vendors', description='Vendor related operations')
 ns_user = Namespace('users', description='User & Payment related operations')
 ns_category = Namespace('categories', description='Category related operations')
@@ -27,7 +28,8 @@ ns_product = Namespace('products', description='Product related operations')
 ns_cart = Namespace('cart', description='Cart related operations')
 ns_cartitem = Namespace('cart items', description='CartItem related operations')
 ns_order = Namespace('orders', description='Product Order related operations')
-api.add_namespace(ns)
+api.add_namespace(ns_auth)
+api.add_namespace(ns_payment)
 api.add_namespace(ns_cart)
 api.add_namespace(ns_cartitem)
 api.add_namespace(ns_category)
@@ -55,7 +57,7 @@ def verify_jwt_token(func):
     return wrapper
 
 
-@ns.route('/signup')
+@ns_auth.route('/signup')
 class Signup(Resource):
     @ns.expect(user_input_schema)
     # @ns.marshal_with(users_schema)
@@ -104,7 +106,7 @@ class Signup(Resource):
         return user_dict, 201
 
 
-@ns.route('/login')
+@ns_auth.route('/login')
 class Login(Resource):
     @ns.expect(user_login_schema)
     def post(self):
@@ -148,38 +150,87 @@ class Login(Resource):
 # ----------------------------------------------  P A Y M E N T   R O U T E S -----------------------------------------------
 
  
-@ns.route('/farmartpayment')
+@ns_payment.route('/farmartpayment')
 class MakePayment(Resource):
+    @ns.marshal_with(payments_schema)
     def post(self):
         data = request.get_json()
-        if data:
-        # if 'Body' in data and 'stkCallback' in data['Body']:
-        #     payment_details = data['Body']['stkCallback']
-        #     if payment_details:
-        #         transaction_data = {
-        #         key: getattr(payment_details,key)
-        #         for key in ["MerchantRequestID", "CheckoutRequestID", "ResultCode", "ResultDesc", "CallbackMetadata", "TinyPesaID", "ExternalReference", "Amount", "Msisdn"]
-        #     }
-            print("!!!!!!Webhook received and processed successfully!!!!!!!")
-            print(f"---------->Data:{data}")
-            global paymentConfirmationDetails
-            paymentConfirmationDetails.append(data)
-            return data, 200
+        if 'Body' in data and 'stkCallback' in data['Body']:
+            payment_details = data['Body']['stkCallback']
+            if payment_details:
+                keys_to_extract = ["ResultCode", "ResultDesc", "CallbackMetadata", "ExternalReference", "Amount", "Msisdn"]
+                transaction_data = {
+                    key: payment_details.get(key)
+                    for key in keys_to_extract
+                }
+                print("!!!!!!Webhook received and processed successfully!!!!!!!")
+                print(f"---------->Data:{transaction_data}")
+
+
+            #  create payment record
+            callback_metadata= transaction_data['CallbackMetadata']['Item']
+            for item in callback_metadata:
+                if item['Name'] == "Amount":
+                    amount = item.get('Value')
+                elif item['Name'] == "MpesaReceiptNumber":
+                    mpesa_receipt_number = item.get('Value')
+                elif item['Name'] == "TransactionDate":
+                    transaction_date = item.get('Value')
+                elif item['Name'] == "PhoneNumber":
+                    phone_number = item.get('Value')
+
+            new_payment = Payment(
+                mpesa_receipt_code=mpesa_receipt_number,
+                payment_date=transaction_date,
+                paid_by_number=phone_number,
+                amount_paid=amount,
+                payment_uid=transaction_data['ExternalReference']
+            )
+            db.session.add(new_payment)
+            db.session.commit()        
+
+            return new_payment, 201
         else:
-            return jsonify({'message': 'Invalid request data'}), 400
+            return {'message': 'Invalid request data'}, 400
 
 
 # <int:phonenumber>
-@ns.route('/get_payment_confirmation_details/')
+@ns_payment.route('/get_payment_confirmation_details/')
 class GetPaymentConfirmation(Resource):
     def get(self):
-        global paymentConfirmationDetails
         if len(paymentConfirmationDetails) > 0:
+            print(f'-----------------> {paymentConfirmationDetails}')
             return paymentConfirmationDetails, 200
+        
         else:
             return {'message': 'No payment confirmation data available'}, 404 
         
-        
+
+@ns_payment.route('/payments')
+class Payments(Resource):
+    def post(self):
+        data = request.get_json()
+        callback_metadata= data['CallbackMetadata']['Item']
+        for item in callback_metadata:
+            if item['Name'] == "Amount":
+                amount = item.get('Value')
+            elif item['Name'] == "MpesaReceiptNumber":
+                mpesa_receipt_number = item.get('Value')
+            elif item['Name'] == "TransactionDate":
+                transaction_date = item.get('Value')
+            elif item['Name'] == "PhoneNumber":
+                phone_number = item.get('Value')
+
+        new_payment = Payment(
+            mpesa_receipt_code=mpesa_receipt_number,
+            payment_date=transaction_date,
+            paid_by_number=phone_number,
+            amount_paid=amount,
+            payment_uid=data.get('ExternalReference')  
+        )
+        db.session.add(new_payment)
+        db.session.commit()        
+
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
 
 
@@ -353,7 +404,6 @@ class ProductResource(Resource):
         return product
     
 
-
 # ----------------------------------------------  C A T E G O R I E S  R O U T E S -----------------------------------------------
 
 @ns_category.route('/categories')
@@ -434,6 +484,7 @@ class OrderList(Resource):
         db.session.add(new_order)
         db.session.commit()
         return new_order, 201
+
 
 @ns_order.route('/orders/<int:id>')
 class OrderResource(Resource):
