@@ -13,7 +13,9 @@ from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import SubmitField
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 
-
+photos = UploadSet('photos', IMAGES)
+configure_uploads(app, photos)
+jwt = JWTManager(app)
 
 ns = Namespace('authorization')
 ns_vendor = Namespace('vendors')
@@ -31,9 +33,7 @@ api.add_namespace(ns_order)
 api.add_namespace(ns_product)
 api.add_namespace(ns_user)
 api.add_namespace(ns_vendor)
-photos = UploadSet('photos', IMAGES)
-configure_uploads(app, photos)
-jwt = JWTManager(app)
+
 
 
 # ---------------------------------------------- A U T H E N T I C A T I O N   R O U T E S -----------------------------------------------
@@ -138,8 +138,16 @@ class Login(Resource):
         else:
             return {'message': 'Invalid credentials'}, 401
 
-  
-
+ 
+@ns.route('/farmartpayment')
+class MakePayment(Resource):
+    def post():
+        data = request.get_json()
+        if data:
+            print(data)
+            return jsonify({"message":"Webhoot received and processed successfully!" }), 200
+        else:
+            return jsonify({'message': 'Invalid request data'}), 400
 # ----------------------------------------------  V E N D O R   R O U T E S-----------------------------------------------
 
 
