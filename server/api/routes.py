@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
@@ -751,13 +751,16 @@ class UploadImage(Resource):
         try:
             file = request.files["image"]
             if file:
-                # filename = photos.save(form.photo.data)  # Save the image to the uploads folder
-                # file_url = url_for('get_file', filename=filename)
                 filename = os.path.join(app.config["UPLOADED_PHOTOS_DEST"], file.filename)
                 file.save(filename)
                 base_url = request.url_root 
                 image_url = url_for('get_image', filename=file.filename)
                 complete_url = base_url + image_url
+
+                uploaded_image = UploadedImage(filename=file.filename, url=complete_url)
+                db.session.add(uploaded_image)
+                db.session.commit()
+
                 return make_response(jsonify({"url": complete_url}), 200)
             else:
                 return {"message": "No file uploaded"}, 400
