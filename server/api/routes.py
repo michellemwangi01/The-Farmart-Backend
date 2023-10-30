@@ -12,6 +12,8 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import SubmitField
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask import url_for
+
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
@@ -753,7 +755,10 @@ class UploadImage(Resource):
                 # file_url = url_for('get_file', filename=filename)
                 filename = os.path.join(app.config["UPLOADED_PHOTOS_DEST"], file.filename)
                 file.save(filename)
-                return make_response(jsonify(filename), 200)
+                base_url = request.url_root 
+                image_url = url_for('get_image', filename=file.filename)
+                complete_url = base_url + image_url
+                return make_response(jsonify({"url": complete_url}), 200)
             else:
                 return {"message": "No file uploaded"}, 400
         except Exception as e:
