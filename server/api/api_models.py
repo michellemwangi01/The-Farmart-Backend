@@ -284,4 +284,9 @@ cart_schema=api.model('cart',{
 })
 
 
+UploadImage_schema=api.model('UploadImage',{
+    "id": fields.Integer,
+    "filename": fields.String,
+    "url":fields.String
+})
 
