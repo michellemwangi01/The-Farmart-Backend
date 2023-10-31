@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment 
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
