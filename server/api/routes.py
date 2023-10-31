@@ -265,13 +265,13 @@ class Vendors(Resource):
   
 @ns_vendor.route('/vendors/<int:id>')
 class VendorResource(Resource):
-    # @jwt_required()
+    @jwt_required()
     @ns.marshal_with(vendor_schema)
     def get(self, id):
-        # current_user = get_jwt_identity()
-        # user = User.query.filter_by(id = current_user).first()
-        # if user.isAdmin == False:
-        #     return {'message':'You are not allowed to view this page'}, 404
+        current_user = get_jwt_identity()
+        user = User.query.filter_by(id = current_user).first()
+        if user.isAdmin == False:
+            return {'message':'You are not allowed to view this page'}, 404
         vendor = Vendor.query.get_or_404(id)
         return vendor
     
