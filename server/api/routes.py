@@ -474,12 +474,21 @@ class OrderList(Resource):
     @ns.marshal_with(order_schema)
     def post(self):
         data = request.get_json()
-        # Validation and processing logic
+
         new_order = Order(
             user_id = data['user_id'],
             quantity=data['quantity'],
             status=data['status'],
             product_id=data['product_id'],
+            vendor_id = data['payment_uid'],
+            payment_uid = data['payment_uid'],
+            delivery_type = data['delivery_type'],
+            phone_number = data['phone_number'],
+            shipping_address = data['shipping_address'],
+            email = data['email'],
+            county = data['county'],
+            amount = data['amount'],
+            full_name = data['FullName'],
         )
         db.session.add(new_order)
         db.session.commit()

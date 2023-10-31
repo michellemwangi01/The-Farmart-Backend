@@ -53,6 +53,7 @@ class Vendor(db.Model):
     mobile_number = db.Column(db.String)
     email_address = db.Column(db.String)
     physical_address = db.Column(db.String)
+    county = db.Column(db.String)
     longitude = db.Column(db.Float)
     latitude = db.Column(db.Float)
     product_list = db.Column(db.String)
@@ -140,11 +141,19 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    purchased_at = db.Column(db.DateTime, server_default=db.func.now())
     quantity = db.Column(db.Integer)
-    status = db.Column(db.String)
+    status = db.Column(db.String, default="Ordered")
+    delivery_type = db.Column(db.String)
+    phone_number = db.Column(db.String)
+    shipping_address = db.Column(db.String)
+    county = db.Column(db.String)
+    email = db.Column(db.String)
+    amount = db.Column(db.Integer)
+    vendor_id = db.Column(db.Integer)
+    full_name = db.Column(db.String)
     order_date = db.Column(db.DateTime, server_default=db.func.now())
     payment_uid = db.Column(db.String, db.ForeignKey('payments.payment_uid'))
+
 
     product = db.relationship('Product', back_populates='orders')
     user = db.relationship('User', back_populates='orders')
@@ -156,7 +165,6 @@ class Order(db.Model):
         if cart_item.product.vendor_id == self.user_id:
             raise ValueError("You cannot buy your own product.")
         return cart_item
-
 
     def __repr__(self):
         return f'(id={self.id}, product_id={self.product_id}, user_id={self.user_id}, purchased_at={self.purchased_at})'

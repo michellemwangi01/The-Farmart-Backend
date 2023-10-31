@@ -153,13 +153,15 @@ product_input_schema = api.model('product_input', {
     "category_id": fields.Integer,
     "image": fields.String,
     "price": fields.Integer,
+    
 })
 
 vendor_order_schema =  api.model('vendor_order',{
     "id":fields.Integer,
     "user_id" : fields.Integer, 
     "fullnames" :fields.String,
-    "business_name" :fields.String
+    "business_name" :fields.String, 
+    "county": fields.String
 })
 product_summary_schema = api.model("products_order", {
     "id": fields.Integer,
@@ -194,8 +196,10 @@ product_schema = api.model("products", {
     "description": fields.String,
     "image": fields.String,
     "price": fields.Integer,
+    "category_id": fields.Integer,
     "vendor": fields.Nested(vendor_order_schema),
     "category": fields.Nested(category_input_schema),
+    
 })
 
 order_input_schema = api.model('order_input', {
@@ -203,13 +207,34 @@ order_input_schema = api.model('order_input', {
     "user_id": fields.Integer,
     "quantity": fields.Integer,
     "status": fields.String,
+    "delivery_type" :fields.String,
+    "phone_number" : fields.String,
+    "shipping_address" : fields.String,
+    "county" : fields.String,
+    "email" :fields.String,
+    "amount" : fields.Integer,
+    "payment_uid" : fields.String,
+    "full_name": fields.String,
+    "vendor_id": fields.Integer,
+    "DoorStepDelivery": fields.String,
+    "Pickup": fields.String,
+
 })
 
 order_schema = api.model('order', {
     "id": fields.Integer,
+    "product_id": fields.Integer,
+    "user_id": fields.Integer,
     "quantity": fields.Integer,
     "status": fields.String,
-    "purchased_at": fields.DateTime,
+    "delivery_type" :fields.String,
+    "phone_number" : fields.String,
+    "shipping_address" : fields.String,
+    "county" : fields.String,
+    "email" :fields.String,
+    "amount" : fields.Integer,
+    "order_date" :fields.DateTime,
+    "payment_uid" : fields.String,
     "product": fields.Nested(product_summary_schema),
     "user": fields.Nested(users_summary_schema),
 })
