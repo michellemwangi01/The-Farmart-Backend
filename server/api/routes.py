@@ -110,12 +110,12 @@ class Login(Resource):
         data = request.get_json()
 
         if not data or not data['username'] or not data['password']:
-            return {'message': 'Could Not Verify'}, 401
+            return {'message': 'Unable to verify user'}, 401
 
         user = User.query.filter_by(username=data['username']).first()
 
         if not user:
-            return {'message': 'Could Not Verify'}, 401
+            return {'message': 'Authentication failed. Invalid username or password.'}, 401
 
 
         if check_password_hash(user.password_hash, data['password']):
