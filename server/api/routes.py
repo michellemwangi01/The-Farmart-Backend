@@ -26,7 +26,7 @@ ns_user = Namespace('users', description='User & Payment related operations')
 ns_category = Namespace('categories', description='Category related operations')
 ns_product = Namespace('products', description='Product related operations')
 ns_cart = Namespace('cart', description='Cart related operations')
-ns_cartitem = Namespace('cart items', description='CartItem related operations')
+ns_cartitem = Namespace('cartitems', description='CartItem related operations')
 ns_order = Namespace('orders', description='Product Order related operations')
 api.add_namespace(ns_auth)
 api.add_namespace(ns_payment)
@@ -480,7 +480,7 @@ class OrderList(Resource):
             quantity=data['quantity'],
             status=data['status'],
             product_id=data['product_id'],
-            vendor_id = data['payment_uid'],
+            vendor_id = data['vendor_id'],
             payment_uid = data['payment_uid'],
             delivery_type = data['delivery_type'],
             phone_number = data['phone_number'],
@@ -703,8 +703,10 @@ class CartItems(Resource):
 class CartItemResource(Resource):
     @ns.marshal_with(cart_item_schema)
     def get(self, id):
-        cart_item = CartItem.query.get_or_404(id)
-        return cart_item
+        user_cart = Cart.query.filter(Cart.user_id == id).first()
+        user_cart_id = user_cart.id
+        cart_items = CartItem.query.filter(CartItem.cart_id == user_cart_id).all()
+        return cart_items,200
 
     @ns.response(204, 'Cart item deleted')
     def delete(self, id):
