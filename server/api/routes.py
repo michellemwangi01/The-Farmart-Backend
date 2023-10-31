@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment 
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
@@ -61,7 +61,7 @@ def verify_jwt_token(func):
 
 @ns_auth.route('/signup')
 class Signup(Resource):
-    @ns.expect(user_input_schema)
+    @ns.expect(signup_input_schema)
     # @ns.marshal_with(users_schema)
     def post(self):
         data = request.get_json()
@@ -69,7 +69,7 @@ class Signup(Resource):
         if not data:
             return {"message":"Data not found!"},404
         
-        required_fields = ['username', 'email', 'password', 'repeatpassword', 'profile_pic', 'first_name', 'last_name', 'address', 'phone_number']
+        required_fields = ['username', 'email', 'password', 'repeatpassword', 'first_name', 'last_name']
         for field in required_fields:
             if field not in data or data[field]=='':
                 return {'message': f'Missing required field: {field}'}, 400
@@ -81,14 +81,9 @@ class Signup(Resource):
             username=data['username'],
             email=data['email'],
             public_id=str(uuid.uuid4()),
-            profile_pic = data['profile_pic'],
             first_name = data['first_name'],
             last_name = data['last_name'],
-            address = data['address'],
-            phone_number = data['phone_number']
-        )
-        new_user.set_password(data['password'])
-        print(f'new user:{new_user}')
+        )      
         new_user.set_password(data['password'])
         db.session.add(new_user)
         db.session.commit()
@@ -96,7 +91,7 @@ class Signup(Resource):
 
         user_dict = {
             key: getattr(new_user,key)
-            for key in ["username", "email", "public_id", "profile_pic", "first_name", "last_name", "address", "phone_number"]
+            for key in ["id","username", "email", "public_id", "first_name", "last_name"]
         }
 
         # create cart for user
@@ -590,7 +585,7 @@ class Users(Resource):
     @ns.marshal_with(users_schema, code=201)
     def post(self):
         data = request.get_json()
-        # Validation and processing logic
+
         new_user = User(
             username=data['username'],
             email=data['email'],
