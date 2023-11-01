@@ -124,7 +124,9 @@ class Login(Resource):
             response_data = {
                 'access_token': access_token,
                 'firstname': user.first_name,
-                 'user_id': user.id
+                 'lastname': user.last_name,
+                 'user_id': user.id,
+                 'email':user.email
             }
 
             # Check if the user has a cart, if not, create one
@@ -732,6 +734,7 @@ class CartItemResource(Resource):
             return cart_items,200
         else:
             return {"message":"The user was not found."}
+        
         
 @ns_cartitem.route('/cart_items/<int:id>')
 class CartItemResource(Resource):

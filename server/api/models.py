@@ -79,6 +79,7 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     description = db.Column(db.String)
+    product_code = db.Column(db.String)
     price = db.Column(db.Numeric(precision=10, scale=2))
     vendor_id = db.Column(db.Integer, ForeignKey('vendors.id', ondelete='CASCADE'))
     category_id = db.Column(db.Integer, ForeignKey('categories.id', ondelete='CASCADE'))
