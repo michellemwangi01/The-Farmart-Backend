@@ -28,6 +28,7 @@ users_schema = api.model('users',{
 
 
 
+
 user_input_schema = api.model('user_input',{
     "username": fields.String,
     "password": fields.String,
@@ -38,6 +39,16 @@ user_input_schema = api.model('user_input',{
     "last_name": fields.String,
     "address": fields.String,
     "phone_number": fields.String,
+})
+
+signup_input_schema = api.model('signup_input',{
+    "username": fields.String,
+    "password": fields.String,
+    "repeatpassword": fields.String,
+    "email": fields.String,
+    "first_name": fields.String,
+    "last_name": fields.String,
+    
 })
 
 user_login_schema = api.model('user_login',{
@@ -273,4 +284,9 @@ cart_schema=api.model('cart',{
 })
 
 
+UploadImage_schema=api.model('UploadImage',{
+    "id": fields.Integer,
+    "filename": fields.String,
+    "url":fields.String
+})
 

@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
@@ -12,6 +12,8 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import SubmitField
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask import url_for
+
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
@@ -26,7 +28,7 @@ ns_user = Namespace('users', description='User & Payment related operations')
 ns_category = Namespace('categories', description='Category related operations')
 ns_product = Namespace('products', description='Product related operations')
 ns_cart = Namespace('cart', description='Cart related operations')
-ns_cartitem = Namespace('cart items', description='CartItem related operations')
+ns_cartitem = Namespace('cartitems', description='CartItem related operations')
 ns_order = Namespace('orders', description='Product Order related operations')
 api.add_namespace(ns_auth)
 api.add_namespace(ns_payment)
@@ -59,7 +61,7 @@ def verify_jwt_token(func):
 
 @ns_auth.route('/signup')
 class Signup(Resource):
-    @ns.expect(user_input_schema)
+    @ns.expect(signup_input_schema)
     # @ns.marshal_with(users_schema)
     def post(self):
         data = request.get_json()
@@ -67,7 +69,7 @@ class Signup(Resource):
         if not data:
             return {"message":"Data not found!"},404
         
-        required_fields = ['username', 'email', 'password', 'repeatpassword', 'profile_pic', 'first_name', 'last_name', 'address', 'phone_number']
+        required_fields = ['username', 'email', 'password', 'repeatpassword', 'first_name', 'last_name']
         for field in required_fields:
             if field not in data or data[field]=='':
                 return {'message': f'Missing required field: {field}'}, 400
@@ -79,14 +81,9 @@ class Signup(Resource):
             username=data['username'],
             email=data['email'],
             public_id=str(uuid.uuid4()),
-            profile_pic = data['profile_pic'],
             first_name = data['first_name'],
             last_name = data['last_name'],
-            address = data['address'],
-            phone_number = data['phone_number']
-        )
-        new_user.set_password(data['password'])
-        print(f'new user:{new_user}')
+        )      
         new_user.set_password(data['password'])
         db.session.add(new_user)
         db.session.commit()
@@ -94,7 +91,7 @@ class Signup(Resource):
 
         user_dict = {
             key: getattr(new_user,key)
-            for key in ["username", "email", "public_id", "profile_pic", "first_name", "last_name", "address", "phone_number"]
+            for key in ["id","username", "email", "public_id", "first_name", "last_name"]
         }
 
         # create cart for user
@@ -113,12 +110,12 @@ class Login(Resource):
         data = request.get_json()
 
         if not data or not data['username'] or not data['password']:
-            return {'message': 'Could Not Verify'}, 401
+            return {'message': 'Unable to verify user'}, 401
 
         user = User.query.filter_by(username=data['username']).first()
 
         if not user:
-            return {'message': 'Could Not Verify'}, 401
+            return {'message': 'Authentication failed. Invalid username or password'}, 401
 
 
         if check_password_hash(user.password_hash, data['password']):
@@ -126,7 +123,7 @@ class Login(Resource):
             refresh_token = create_refresh_token(identity=user.id)
             response_data = {
                 'access_token': access_token,
-                'username': user.username,
+                'firstname': user.first_name,
                  'user_id': user.id
             }
 
@@ -265,13 +262,13 @@ class Vendors(Resource):
   
 @ns_vendor.route('/vendors/<int:id>')
 class VendorResource(Resource):
-    # @jwt_required()
+    @jwt_required()
     @ns.marshal_with(vendor_schema)
     def get(self, id):
-        # current_user = get_jwt_identity()
-        # user = User.query.filter_by(id = current_user).first()
-        # if user.isAdmin == False:
-        #     return {'message':'You are not allowed to view this page'}, 404
+        current_user = get_jwt_identity()
+        user = User.query.filter_by(id = current_user).first()
+        if user.isAdmin == False:
+            return {'message':'You are not allowed to view this page'}, 404
         vendor = Vendor.query.get_or_404(id)
         return vendor
     
@@ -356,6 +353,19 @@ class Products(Resource):
 
         return new_product, 201
 
+
+@ns_product.route('/vendor_products')
+class ProductResource(Resource):  
+    @jwt_required()
+    @ns.marshal_with(product_schema)
+    def get(self):
+        current_user_id = get_jwt_identity()
+        vendor = Vendor.query.filter_by(user_id=current_user_id).first()
+        if vendor:    
+            products = Product.query.filter_by(vendor_id=vendor.id).all()
+            return products, 200
+        else:
+            return {"message": "User is not registered as a vendor and has no products."}
 
 
 @ns_product.route('/products/<int:id>')
@@ -480,7 +490,7 @@ class OrderList(Resource):
             quantity=data['quantity'],
             status=data['status'],
             product_id=data['product_id'],
-            vendor_id = data['payment_uid'],
+            vendor_id = data['vendor_id'],
             payment_uid = data['payment_uid'],
             delivery_type = data['delivery_type'],
             phone_number = data['phone_number'],
@@ -494,6 +504,15 @@ class OrderList(Resource):
         db.session.commit()
         return new_order, 201
 
+
+@ns_order.route('/user_orders')
+class OrderResource(Resource):
+    @jwt_required()
+    @ns.marshal_with(order_schema)
+    def get(self):
+        current_user_id = get_jwt_identity()
+        orders = Order.query.filter_by(user_id=current_user_id).all()
+        return orders, 200
 
 @ns_order.route('/orders/<int:id>')
 class OrderResource(Resource):
@@ -588,7 +607,7 @@ class Users(Resource):
     @ns.marshal_with(users_schema, code=201)
     def post(self):
         data = request.get_json()
-        # Validation and processing logic
+
         new_user = User(
             username=data['username'],
             email=data['email'],
@@ -699,13 +718,23 @@ class CartItems(Resource):
         return cart_items
 
 
+@ns_cartitem.route('/user_cart_items')
+class CartItemResource(Resource):
+    @jwt_required()
+    @ns.marshal_with(cart_item_schema)
+    def get(self):
+        current_user_id = get_jwt_identity()
+        print('----------------------- current user id: {current_user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        if user_cart:
+            user_cart_id = user_cart.id
+            cart_items = CartItem.query.filter(CartItem.cart_id == user_cart_id).all()
+            return cart_items,200
+        else:
+            return {"message":"The user was not found."}
+        
 @ns_cartitem.route('/cart_items/<int:id>')
 class CartItemResource(Resource):
-    @ns.marshal_with(cart_item_schema)
-    def get(self, id):
-        cart_item = CartItem.query.get_or_404(id)
-        return cart_item
-
     @ns.response(204, 'Cart item deleted')
     def delete(self, id):
         cart_item = CartItem.query.get_or_404(id)
@@ -758,11 +787,17 @@ class UploadImage(Resource):
         try:
             file = request.files["image"]
             if file:
-                # filename = photos.save(form.photo.data)  # Save the image to the uploads folder
-                # file_url = url_for('get_file', filename=filename)
                 filename = os.path.join(app.config["UPLOADED_PHOTOS_DEST"], file.filename)
                 file.save(filename)
-                return make_response(jsonify(filename), 200)
+                base_url = request.url_root 
+                image_url = url_for('get_image', filename=file.filename)
+                complete_url = base_url + image_url
+
+                uploaded_image = UploadedImage(filename=file.filename, url=complete_url)
+                db.session.add(uploaded_image)
+                db.session.commit()
+
+                return make_response(jsonify({"url": complete_url}), 200)
             else:
                 return {"message": "No file uploaded"}, 400
         except Exception as e:
