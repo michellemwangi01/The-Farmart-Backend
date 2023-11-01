@@ -32,7 +32,11 @@ class User(db.Model):
     orders = db.relationship('Order', back_populates='user', cascade='all, delete-orphan')
     cart = db.relationship('Cart', back_populates='user', cascade='all, delete-orphan')
 
-    __table_args__ = (UniqueConstraint('username', name='user_unique_constraint'),)
+    __table_args__ = (
+    UniqueConstraint('username', name='user_unique_constraint'),
+    UniqueConstraint('email', name='email_unique_constraint')
+)
+
 
     def __repr__(self):
         return f'(id={self.id}, name={self.username} email={self.email} profile_pic={self.profile_pic})'
