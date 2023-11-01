@@ -123,10 +123,15 @@ class Login(Resource):
             refresh_token = create_refresh_token(identity=user.id)
             response_data = {
                 'access_token': access_token,
-                'firstname': user.first_name,
-                 'lastname': user.last_name,
-                 'user_id': user.id,
-                 'email':user.email
+                'current_user':{
+                
+                    'fullname': user.first_name +" "+ user.last_name,
+                    'lastname': user.last_name,
+                    'user_id': user.id,
+                    'email':user.email,
+                    'profile_pic':user.profile_pic
+                }
+                
             }
 
             # Check if the user has a cart, if not, create one
