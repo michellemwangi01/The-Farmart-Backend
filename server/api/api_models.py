@@ -102,9 +102,9 @@ categories_schema = api.model('categories',{
 
 
 cart_item_input_schema = api.model('cart_item_input', {
-    "product_id": fields.Integer(required=True),
-    "quantity": fields.Integer(required=True),
-    "cart_id": fields.Integer(required=True)
+    "product_id": fields.Integer,
+    "quantity": fields.Integer,
+    "cart_id": fields.Integer
 })
 
 transaction_input_schema = api.model('transaction_input', {

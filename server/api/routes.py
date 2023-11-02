@@ -693,31 +693,42 @@ class CartItems(Resource):
     @ns.marshal_with(cart_item_schema)
     def post(self):
         data = request.get_json()
-
+        print(data)
         errors = cart_item_input_schema.validate(data)
         if errors:
             return {'message': 'Input data is not valid', 'errors': errors}, 400
 
         product_id = data.get('product_id')
         quantity = data.get('quantity')
-        cart_id = data.get('cart_id')
+        user_id = data.get('user_id')
 
         # Validate that the product with the given ID exists
-        product = Product.query.get(product_id)
+        product = Product.query.get_or_404(product_id)
         if not product:
             return {'message': 'product not found'}, 404
+        
+        # Validate that the user exists and get the Cart ID 
+        user = User.query.get_or_404(user_id)
+        if user:
+            cart = Cart.query.filter_by(user_id = user.id).first()
+            print(cart)
+            if cart:
+                new_cart_item = CartItem(
+                    product_id=product_id,
+                    quantity=quantity,
+                    cart_id = cart.id
+                    )
+                print(new_cart_item)
+                db.session.add(new_cart_item)
+                db.session.commit()
+                return new_cart_item, 201
+            else:
+                return {'message': 'Cart not found'}, 404
+        else:
+            return {'message': 'User not found'}, 404
 
         # Create a new cart item
-        new_cart_item = CartItem(
-            product_id=product_id,
-            quantity=quantity,
-            cart_id = cart_id
-        )
-
-        db.session.add(new_cart_item)
-        db.session.commit()
-
-        return new_cart_item, 201
+        
 
     @ns.marshal_list_with(cart_item_schema)
     def get(self):
@@ -737,6 +748,26 @@ class CartItemResource(Resource):
             user_cart_id = user_cart.id
             cart_items = CartItem.query.filter(CartItem.cart_id == user_cart_id).all()
             return cart_items,200
+        else:
+            return {"message":"The user was not found."}
+        
+
+    @jwt_required()
+    @ns.marshal_with(cart_item_schema)
+    def post(self):
+        data = request.get_json()
+        current_user_id = get_jwt_identity()
+        print('----------------------- current user id: {current_user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        if user_cart:
+            user_cart_id = user_cart.id
+            new_cart_item = CartItem(
+                product_id=data['product_id'],
+                quantity=data["quantity"],
+                cart_id = user_cart_id
+        )
+            new_cart_item.save()
+            return new_cart_item,200
         else:
             return {"message":"The user was not found."}
         
