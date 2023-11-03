@@ -36,4 +36,5 @@ jobs:
         # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        export PYTHONPATH="$PYTHONPATH:/home/michelle/Development/Code/phase-4-flask/The-Farmart/The-Farmart-Backend/server"
+        pytest tests/tests.py
