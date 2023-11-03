@@ -1,5 +1,5 @@
 import pytest
-from api import  app, db, User  # Import your User model and SQLAlchemy db instance
+from api import  app  # Import your User model and SQLAlchemy db instance
 from flask import json
 
 
