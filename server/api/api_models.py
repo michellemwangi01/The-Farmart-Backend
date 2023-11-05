@@ -301,3 +301,6 @@ UploadImage_schema=api.model('UploadImage',{
     "url":fields.String
 })
 
+cart_delete_schema = api.model('cart_delete_schema',{
+
+})

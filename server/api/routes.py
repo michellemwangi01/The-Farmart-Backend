@@ -735,6 +735,21 @@ class CartItems(Resource):
         cart_items = CartItem.query.all()
         return cart_items
 
+@app.route("/clearcartitems", methods=["DELETE"])
+@jwt_required()
+def clear_cart_items():
+    current_user_id = get_jwt_identity()
+    
+    print(f'----------------------- current user id: {current_user_id}')
+    
+    user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+    
+    if user_cart:
+        user_cart_id = user_cart.id
+        CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
+        return jsonify({"message": "Cart successfully cleared"}), 200
+    else:
+        return jsonify({"message": "User not found."}), 404
 
 @ns_cartitem.route('/user_cart_items')
 class CartItemResource(Resource):
@@ -750,6 +765,25 @@ class CartItemResource(Resource):
             return cart_items,200
         else:
             return {"message":"The user was not found."}
+        
+
+    @jwt_required()
+    # @ns.expect(cart_delete_schema)
+    @ns.marshal_with(cart_item_schema)
+    def delete(self):
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        print(data)
+        current_user_id = get_jwt_identity()
+    
+        print('----------------------- current user id: {current_user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        if user_cart:
+            user_cart_id = user_cart.id
+            CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
+            return {"message":"Cart Successfully cleared"},200
+        else:
+            return {"message":"The user was not found."}, 404
         
 
     @jwt_required()
