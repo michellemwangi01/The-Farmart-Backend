@@ -105,6 +105,7 @@ cart_item_input_schema = api.model('cart_item_input', {
     "product_id": fields.Integer,
     "quantity": fields.Integer,
     "cart_id": fields.Integer
+    
 })
 
 transaction_input_schema = api.model('transaction_input', {
@@ -303,4 +304,12 @@ UploadImage_schema=api.model('UploadImage',{
 
 cart_delete_schema = api.model('cart_delete_schema',{
 
+})
+
+order_products_schema = api.model('order_products_schema',{
+    'id': fields.Integer,
+    'order_id': fields.Integer,
+    'product_id': fields.Integer,
+    'quantity': fields.Integer,
+    'amount': fields.Integer,
 })

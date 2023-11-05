@@ -3,7 +3,7 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage, OrderProducts
 import os
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
@@ -494,10 +494,7 @@ class OrderList(Resource):
 
         new_order = Order(
             user_id = data['user_id'],
-            quantity=data['quantity'],
             status=data['status'],
-            product_id=data['product_id'],
-            vendor_id = data['vendor_id'],
             payment_uid = data['payment_uid'],
             delivery_type = data['delivery_type'],
             phone_number = data['phone_number'],
@@ -511,6 +508,22 @@ class OrderList(Resource):
         db.session.commit()
         return new_order, 201
 
+@ns_order.route('/product_orders')  
+class OrderProductsResource(Resource):
+    @ns.expect(order_products_schema)
+    @ns.marshal_with(order_products_schema)    
+    def post(self):
+        data = request.get_json() 
+        print(data)
+        new_order_product = OrderProducts(
+            order_id= data['order_id'],
+            product_id= data['product_id'],
+            quantity= data['quantity'],
+            amount= data['amount']
+        )
+        db.session.add(new_order_product)
+        db.session.commit()
+        return new_order_product,200
 
 @ns_order.route('/user_orders')
 class OrderResource(Resource):
@@ -560,7 +573,8 @@ class OrderResource(Resource):
         db.session.commit()
         return order
 
-    
+
+
 
 # ---------------------------------------------- C A R T S   R O U T E S -----------------------------------------------
 
@@ -735,21 +749,24 @@ class CartItems(Resource):
         cart_items = CartItem.query.all()
         return cart_items
 
-@app.route("/clearcartitems", methods=["DELETE"])
-@jwt_required()
-def clear_cart_items():
-    current_user_id = get_jwt_identity()
-    
-    print(f'----------------------- current user id: {current_user_id}')
-    
-    user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
-    
-    if user_cart:
-        user_cart_id = user_cart.id
-        CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
-        return jsonify({"message": "Cart successfully cleared"}), 200
-    else:
-        return jsonify({"message": "User not found."}), 404
+@ns_cartitem.route('/clear_cart_items')
+class ClearCartItemResource(Resource):
+    def delete(self):
+        user_id = request.get_json()['user_id']
+        print('----------------------- current user id: {user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == user_id).first()
+
+        if user_cart:
+            user_cart_id = user_cart.id
+            CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
+            
+        
+            db.session.commit()
+            
+            return {"message": "Cart successfully cleared"}, 200
+        else:
+            return {"message": "User not found."}, 404
+
 
 @ns_cartitem.route('/user_cart_items')
 class CartItemResource(Resource):
@@ -829,7 +846,6 @@ class CartItemResource(Resource):
     @ns.expect(cart_item_input_schema)
     @ns.marshal_with(cart_item_schema)
     def patch(self, id):
-        # Partially update a cart item by ID using request data
         cart_item = CartItem.query.get_or_404(id)
         data = request.get_json()
         for attr in data:
