@@ -112,11 +112,12 @@ class Login(Resource):
         if not data or not data['username'] or not data['password']:
             return {'message': 'Unable to verify user'}, 401
 
-        user = User.query.filter_by(username=data['username']).first()
-        vendor = Vendor.query.filter_by(user_id =user.id).first()
+        user = User.query.filter_by(email=data['username']).first()
 
         if not user:
             return {'message': 'Authentication failed. Invalid username or password'}, 401
+
+        vendor = Vendor.query.filter_by(user_id =user.id).first()
 
         if not vendor:
             vendor_id = None
@@ -136,10 +137,8 @@ class Login(Resource):
                     'email':user.email,
                     'profile_pic':user.profile_pic,
                     'vendor_id': vendor_id
-                }
-                
+                }    
             }
-
             # Check if the user has a cart, if not, create one
             user_cart = Cart.query.filter_by(user_id=user.id).first()
             if not user_cart:
@@ -265,7 +264,7 @@ class Vendors(Resource):
             physical_address=data['physical_address'],
             latitude=data['latitude'],
             longitude=data['longitude'],
-            product_list=''.join(data['category']),
+            product_list=', '.join(data['category']),
             image=data['image'],
             county=data['county']
         )
