@@ -113,10 +113,15 @@ class Login(Resource):
             return {'message': 'Unable to verify user'}, 401
 
         user = User.query.filter_by(username=data['username']).first()
+        vendor = Vendor.query.filter_by(user_id =user.id).first()
 
         if not user:
             return {'message': 'Authentication failed. Invalid username or password'}, 401
 
+        if not vendor:
+            vendor_id = None
+        else:
+            vendor_id = vendor.id
 
         if check_password_hash(user.password_hash, data['password']):
             access_token = create_access_token(identity=user.id)
@@ -129,7 +134,8 @@ class Login(Resource):
                     'lastname': user.last_name,
                     'user_id': user.id,
                     'email':user.email,
-                    'profile_pic':user.profile_pic
+                    'profile_pic':user.profile_pic,
+                    'vendor_id': vendor_id
                 }
                 
             }
@@ -259,8 +265,9 @@ class Vendors(Resource):
             physical_address=data['physical_address'],
             latitude=data['latitude'],
             longitude=data['longitude'],
-            product_list=data['product_list'],
-            image=data['image']
+            product_list=''.join(data['category']),
+            image=data['image'],
+            county=data['county']
         )
         db.session.add(new_vendor)
         db.session.commit()
@@ -560,7 +567,7 @@ class OrderResource(Resource):
         order.quantity = data.get('quantity')
         order.status = data.get('status')
         db.session.commit()
-        return order
+        return order, 200
 
     @ns.expect(order_input_schema)
     @ns.marshal_with(order_schema)
@@ -571,7 +578,7 @@ class OrderResource(Resource):
         for attr in data:
             setattr(order, attr, data[attr])
         db.session.commit()
-        return order
+        return order, 200
 
 
 

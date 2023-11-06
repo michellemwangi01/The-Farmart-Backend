@@ -177,7 +177,7 @@ class Order(db.Model):
     email = db.Column(db.String)
     amount = db.Column(db.Integer)
     full_name = db.Column(db.String)
-    order_date = db.Column(db.DateTime, server_default=db.func.now())
+    date_created = db.Column(db.DateTime, server_default=db.func.now())
     payment_uid = db.Column(db.String, db.ForeignKey('payments.payment_uid'))
 
     # relationships
@@ -196,7 +196,6 @@ class Order(db.Model):
 
     def __repr__(self):
         return f'(id={self.id}, product_id={self.product_id}, user_id={self.user_id}, purchased_at={self.purchased_at})'
-
 
 
 class Payment(db.Model):

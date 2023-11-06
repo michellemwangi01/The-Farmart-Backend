@@ -231,10 +231,34 @@ order_input_schema = api.model('order_input', {
     "Pickup": fields.String,
 
 })
+product_schema = api.model("products", {
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "image": fields.String,
+    "price": fields.Integer,
+    "category_id": fields.Integer,
+    "vendor": fields.Nested(vendor_order_schema),
+    "category": fields.Nested(category_input_schema),
+    "created_at": fields.DateTime
+    
+})
+
+product_schema = api.model("products", {
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "image": fields.String,
+    "price": fields.Integer,
+    "category_id": fields.Integer,
+    "vendor": fields.Nested(vendor_order_schema),
+    "category": fields.Nested(category_input_schema),
+    "created_at": fields.DateTime
+    
+})
 
 order_schema = api.model('order', {
     "id": fields.Integer,
-    "product_id": fields.Integer,
     "user_id": fields.Integer,
     "quantity": fields.Integer,
     "status": fields.String,
@@ -244,10 +268,12 @@ order_schema = api.model('order', {
     "county" : fields.String,
     "email" :fields.String,
     "amount" : fields.Integer,
-    "order_date" :fields.DateTime,
+    "date_created" :fields.DateTime,
     "payment_uid" : fields.String,
-    "product": fields.Nested(product_summary_schema),
+    "products": fields.List(fields.Nested(product_schema)),
     "user": fields.Nested(users_summary_schema),
+   
+  
 })
 user_schema = api.model('user',{
     "public_id": fields.String,
@@ -274,21 +300,10 @@ vendor_schema=api.model('vendor',{
     "image" : fields.String,
     "created_at" : fields.DateTime,
     "updated_at" : fields.DateTime, 
-    "products": fields.List(fields.Nested(product_summary_schema)),
+    "products": fields.List(fields.Nested(product_schema)),
     "orders": fields.List(fields.Nested(order_schema))
 })
-product_schema = api.model("products", {
-    "id": fields.Integer,
-    "name": fields.String,
-    "description": fields.String,
-    "image": fields.String,
-    "price": fields.Integer,
-    "category_id": fields.Integer,
-    "vendor": fields.Nested(vendor_order_schema),
-    "category": fields.Nested(category_input_schema),
-    "created_at": fields.DateTime
-    
-})
+
 cart_schema=api.model('cart',{
     "id": fields.Integer,
     "user_id": fields.Integer,
