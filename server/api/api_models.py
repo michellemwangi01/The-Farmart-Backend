@@ -244,18 +244,18 @@ product_schema = api.model("products", {
     
 })
 
-product_schema = api.model("products", {
-    "id": fields.Integer,
-    "name": fields.String,
-    "description": fields.String,
-    "image": fields.String,
-    "price": fields.Integer,
-    "category_id": fields.Integer,
-    "vendor": fields.Nested(vendor_order_schema),
-    "category": fields.Nested(category_input_schema),
-    "created_at": fields.DateTime
+# product_schema = api.model("products", {
+#     "id": fields.Integer,
+#     "name": fields.String,
+#     "description": fields.String,
+#     "image": fields.String,
+#     "price": fields.Integer,
+#     "category_id": fields.Integer,
+#     "vendor": fields.Nested(vendor_order_schema),
+#     "category": fields.Nested(category_input_schema),
+#     "created_at": fields.DateTime
     
-})
+# })
 
 order_schema = api.model('order', {
     "id": fields.Integer,
@@ -320,11 +320,28 @@ UploadImage_schema=api.model('UploadImage',{
 cart_delete_schema = api.model('cart_delete_schema',{
 
 })
+product_order_schema = api.model('product_order_schema',{
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "image": fields.String,
+    "price": fields.Integer,
+    "category_id": fields.Integer,
+    "category": fields.Nested(category_input_schema),
+    "created_at": fields.DateTime
+})
 
 order_products_schema = api.model('order_products_schema',{
     'id': fields.Integer,
-    'order_id': fields.Integer,
     'product_id': fields.Integer,
+    'vendor_id': fields.Integer,
+    'order_id': fields.Integer,
     'quantity': fields.Integer,
     'amount': fields.Integer,
+    'products': fields.Nested(product_order_schema),
+    'orders': fields.Nested(order_schema),
+    'vendor': fields.Nested(vendor_order_schema),
+
+    
+
 })

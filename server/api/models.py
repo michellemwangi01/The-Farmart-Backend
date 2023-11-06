@@ -70,7 +70,9 @@ class Vendor(db.Model):
     products = db.relationship('Product', back_populates='vendor', cascade='all, delete-orphan')
     orders = association_proxy('products', 'orders')
 
-    
+    # association proxy relationships
+    orderproducts = db.relationship('OrderProducts', back_populates='vendor', cascade='all, delete-orphan')
+    orders = association_proxy('orderproducts','orders')
     
     def __repr__(self):
         return f'(id={self.id}, businessName={self.business_name} email={self.email_address} mobile_number={self.mobile_number} product_list={self.product_list} )'
@@ -157,12 +159,14 @@ class OrderProducts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
+    vendor_id  = db.Column(db.Integer, db.ForeignKey('vendors.id'))
     amount = db.Column(db.Integer)
     quantity = db.Column(db.Integer)
 
     # relationships
     products = db.relationship('Product', back_populates='orderproducts')
     orders = db.relationship('Order',back_populates='orderproducts')
+    vendor = db.relationship('Vendor', back_populates ='orderproducts')
 
 class Order(db.Model):
     __tablename__ = 'orders'
