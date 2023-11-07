@@ -62,14 +62,7 @@ category_input_schema = api.model('category_input',{
     'image': fields.String
 })
 
-payments_schema = api.model('payments',{
-    'id':fields.Integer,
-    'mpesa_receipt_code':fields.String,
-    'payment_date':fields.String,
-    'paid_by_number':fields.String,
-    'amount_paid':fields.Integer,
-    'payment_uid':fields.String
-})
+
 
 photo_category_schema = api.model('photo_category',{
     "id": fields.Integer,
@@ -244,18 +237,16 @@ product_schema = api.model("products", {
     
 })
 
-# product_schema = api.model("products", {
-#     "id": fields.Integer,
-#     "name": fields.String,
-#     "description": fields.String,
-#     "image": fields.String,
-#     "price": fields.Integer,
-#     "category_id": fields.Integer,
-#     "vendor": fields.Nested(vendor_order_schema),
-#     "category": fields.Nested(category_input_schema),
-#     "created_at": fields.DateTime
-    
-# })
+
+payments_schema = api.model('payments',{
+    'id':fields.Integer,
+    'mpesa_receipt_code':fields.String,
+    'payment_date':fields.String,
+    'paid_by_number':fields.String,
+    'amount_paid':fields.Integer,
+    'payment_uid':fields.String,
+    # 'order':fields.Nested(order_products_schema)
+})
 
 order_schema = api.model('order', {
     "id": fields.Integer,
@@ -272,9 +263,12 @@ order_schema = api.model('order', {
     "payment_uid" : fields.String,
     "products": fields.List(fields.Nested(product_schema)),
     "user": fields.Nested(users_summary_schema),
+    'payment': fields.Nested(payments_schema),
    
   
 })
+
+
 user_schema = api.model('user',{
     "public_id": fields.String,
     "username": fields.String,
@@ -341,7 +335,5 @@ order_products_schema = api.model('order_products_schema',{
     'products': fields.Nested(product_order_schema),
     'orders': fields.Nested(order_schema),
     'vendor': fields.Nested(vendor_order_schema),
-
-    
-
+    'payment': fields.Nested(payments_schema),
 })

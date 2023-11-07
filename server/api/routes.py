@@ -157,11 +157,14 @@ class Login(Resource):
                 'refresh_token': refresh_token,
                 'current_user':{
                     'fullname': user.first_name +" "+ user.last_name,
+                    'firstname': user.first_name ,
                     'lastname': user.last_name,
                     'user_id': user.id,
                     'email':user.email,
                     'profile_pic':user.profile_pic,
-                    'vendor_id': vendor_id
+                    'vendor_id': vendor_id,
+                    'address': user.address,
+                    'phone_number': user.phone_number
                 }    
             }
             # Check if the user has a cart, if not, create one
@@ -194,6 +197,8 @@ class refreshToken(Resource):
 class MakePayment(Resource):
     @ns.marshal_with(payments_schema)
     def post(self):
+        # TO RUN NGROK SERVER TO POPULATE PAYMENT TABLE: `ngrok http 5555 --domain redfish-prime-pigeon.ngrok-free.app`
+        # CHANGE WEBHOOK IN TINYPESA IF DOMAIN CHANGES CURRENT DOMAIN: `redfish-prime-pigeon.ngrok-free.app`
         data = request.get_json()
         if 'Body' in data and 'stkCallback' in data['Body']:
             payment_details = data['Body']['stkCallback']
@@ -227,7 +232,15 @@ class MakePayment(Resource):
                 payment_uid=transaction_data['ExternalReference']
             )
             db.session.add(new_payment)
-            db.session.commit()        
+            db.session.commit() 
+
+            # update order status with payment confirmed
+            orders = Order.query.filter_by(payment_uid=transaction_data['ExternalReference'])
+            if orders:
+                for order in orders:
+                    order.status = 'Payment Received'
+                db.session.commit()
+                
 
             return new_payment, 201
         else:
@@ -236,11 +249,12 @@ class MakePayment(Resource):
 
 @ns_payment.route('/get_payment_confirmation_details/')
 class GetPaymentConfirmation(Resource):
+    @ns.marshal_with(payments_schema)
     def get(self):
-        if len(paymentConfirmationDetails) > 0:
-            print(f'-----------------> {paymentConfirmationDetails}')
-            return paymentConfirmationDetails, 200
-        
+        payments = Payment.query.all()
+        if payments:
+            print(f'-----------------> {payments}')
+            return payments, 200
         else:
             return {'message': 'No payment confirmation data available'}, 404 
         
@@ -519,22 +533,20 @@ class CategoryResource(Resource):
 
 @ns_order.route('/orders')
 class OrderList(Resource):
-    # method_decorators = [jwt_required()]
+    method_decorators = [jwt_required()]
     # @ns.doc(security='jwToken')
     @ns.marshal_list_with(order_schema)
     def get(self):
-        print(current_user)
         orders = Order.query.all()
         return orders
 
-    # @ns.doc(security='jwToken')
+    @ns.doc(security='jwToken')
     @ns.expect(order_input_schema)
     @ns.marshal_with(order_schema)
     def post(self):
         data = request.get_json()
-
         new_order = Order(
-            user_id = data['user_id'],
+            user_id = current_user.id,
             status=data['status'],
             payment_uid = data['payment_uid'],
             delivery_type = data['delivery_type'],
@@ -718,41 +730,36 @@ class Users(Resource):
         return users,200
 
 
-        
-
-
-
-
-
-@ns_user.route('/users/<int:id>')
-class UserResource(Resource):
-    @ns.marshal_with(user_schema)
-    def get(self, id):
-        user = User.query.get_or_404(id)
-        return user
+    # @ns.marshal_with(user_schema)
+    # def get(self, id):
+    #     user = User.query.get_or_404(id)
+    #     return user
     
     @ns.expect(user_input_schema)
     @ns.marshal_with(users_schema)
     def put(self, id):
-        # Update a user by ID using request data
         user = User.query.get_or_404(id)
         data = request.get_json()
         user.username = data.get('username')
         user.email = data.get('email')
-        # Update other user fields as needed
         db.session.commit()
         return user
 
+    
     @ns.expect(user_input_schema)
     @ns.marshal_with(users_schema)
-    def patch(self, id):
-        # Partially update a user by ID using request data
-        user = User.query.get_or_404(id)
+    @ns.doc(security='jwToken')
+    def patch(self):
+        print(current_user)
+        user = User.query.get_or_404(current_user.id)
         data = request.get_json()
+        print(f'------------------------------RECEIVED USER UPDATES: {data}')
+
         for attr in data:
-            setattr(user, attr, data[attr])
-        # Update other user fields as needed
+            setattr(user, attr, data[attr])      
+        db.session.add(user) 
         db.session.commit()
+        print(f'------------------------------NEW USER: {user}')
         return user
     
     # @token_required
@@ -820,10 +827,12 @@ class CartItems(Resource):
 
 @ns_cartitem.route('/clear_cart_items')
 class ClearCartItemResource(Resource):
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
     def delete(self):
-        user_id = request.get_json()['user_id']
-        print('----------------------- current user id: {user_id}')
-        user_cart = Cart.query.filter(Cart.user_id == user_id).first()
+        # user_id = request.get_json()['user_id']
+        print('----------------------- current user id: {current_user.id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user.id).first()
 
         if user_cart:
             user_cart_id = user_cart.id
