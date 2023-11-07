@@ -180,7 +180,13 @@ class Login(Resource):
         else:
             return {'message': 'Invalid credentials'}, 401
 
-
+@ns_auth.route('/refresh_token')
+class refreshToken(Resource):
+    method_decorators = [jwt_required(refresh=True)]
+    @ns.doc(security='jwToken')
+    def post(self):
+        access_token = create_access_token(identity=current_user)
+        return jsonify({'access_token': access_token}), 200
 # ----------------------------------------------  P A Y M E N T   R O U T E S -----------------------------------------------
 
  
@@ -420,7 +426,7 @@ class ProductResource(Resource):
             # print(orders)
         db.session.delete(product)
         db.session.commit()
-        return {"message":"product successfully deleted"}, 200
+        return {"message":"product successfully deleted!"}, 200
     
 
 
@@ -833,11 +839,12 @@ class ClearCartItemResource(Resource):
 
 @ns_cartitem.route('/user_cart_items')
 class CartItemResource(Resource):
-    @jwt_required()
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
     @ns.marshal_with(cart_item_schema)
     def get(self):
-        current_user_id = get_jwt_identity()
-        print('----------------------- current user id: {current_user_id}')
+        print('----------------------- current user id: {current_user.id}')
+        current_user_id = current_user.id
         user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
         if user_cart:
             user_cart_id = user_cart.id
