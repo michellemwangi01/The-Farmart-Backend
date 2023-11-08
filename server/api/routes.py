@@ -1,20 +1,18 @@
 
-from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, make_response,  \
-     send_from_directory,  Migrate, db, Api,  \
-   Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
-from api import app, ma, api
+from api import jsonify, request, url_for,  Resource, User, make_response, send_from_directory,   db,   \
+   Namespace,  check_password_hash,  uuid
+from api import app, api
 from .api_models import *
 from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage, OrderProducts
 import os
 from functools import wraps  
-from marshmallow.exceptions import ValidationError
 from flask_uploads import UploadSet, configure_uploads, IMAGES, configure_uploads
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import SubmitField
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required, current_user
 from flask import url_for
-from datetime import datetime, timedelta
+from datetime import  timedelta
 
 
 photos = UploadSet('photos', IMAGES)

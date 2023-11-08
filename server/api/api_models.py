@@ -20,10 +20,10 @@ users_schema = api.model('users',{
     "username": fields.String,
     "email": fields.String,
     "first_name": fields.String,
-    "first_name": fields.String,
+    "last_name": fields.String,
     "address": fields.String,
     "phone_number": fields.String,
-     "profile_pic": fields.String,
+    "profile_pic": fields.String,
 })
 
 
