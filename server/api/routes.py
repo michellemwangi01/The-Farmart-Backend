@@ -4,8 +4,9 @@ from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, mak
    Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
 from api import app, ma, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage, OrderProducts
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , Upload, OrderProducts
 import os
+import uuid
 from functools import wraps  
 from marshmallow.exceptions import ValidationError
 from flask_uploads import UploadSet, configure_uploads, IMAGES, configure_uploads
@@ -19,6 +20,8 @@ from datetime import datetime, timedelta
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
+
+
 jwt = JWTManager(app)
 jwt.init_app(app)
 
@@ -51,6 +54,10 @@ ns_product = Namespace('products', description='Product related operations',auth
 ns_cart = Namespace('cart', description='Cart related operations',authorizations=authorizations)
 ns_cartitem = Namespace('cartitems', description='CartItem related operations',authorizations=authorizations)
 ns_order = Namespace('orders', description='Product Order related operations', authorizations=authorizations)
+ns_upload = Namespace('image',description='image upload related operations',authorizations=authorizations)
+
+
+
 
 api.add_namespace(ns_auth)
 api.add_namespace(ns_payment)
@@ -61,6 +68,8 @@ api.add_namespace(ns_order)
 api.add_namespace(ns_product)
 api.add_namespace(ns_user)
 api.add_namespace(ns_vendor)
+api.add_namespace(ns_upload)
+
 
 
 # ----------------------------------------------------- G L O B A L  V A R I A B L E S -----------------------------------------------
@@ -954,49 +963,47 @@ class CartItemResource(Resource):
 
 # ---------------------------------------------- I M A G E  U P L O A D S   R O U T E S -----------------------------------------------
 
+
 class UploadForm(FlaskForm):
-    photo = FileField(
-        validators=[
-            FileAllowed(photos, 'Only images are allowed'),
-            FileRequired('File field should not be empty')]
-    )
+    photo = FileField(validators=[FileAllowed(photos, 'Image Only!'), FileRequired('Choose a file!')])
     submit = SubmitField('Upload')
 
-class GetFile(Resource):
-    def get(self, filename):
-        return send_from_directory(app.config['UPLOADED_PHOTOS_DEST'], filename)
-
-api.add_resource(GetFile, '/uploads/<filename>')
-    
-# @ns.route('/uploadimage')
-class UploadImage(Resource):
+upload_fields = ns_upload.model('Upload', {
+    'filename': fields.String,
+    'url': fields.String
+})
+@ns_upload.route('/upload')
+class UploadFileResource(Resource):
     def post(self):
-        try:
-            file = request.files["image"]
-            if file:
-                filename = os.path.join(app.config["UPLOADED_PHOTOS_DEST"], file.filename)
-                file.save(filename)
-                base_url = request.url_root 
-                image_url = url_for('get_image', filename=file.filename)
-                complete_url = base_url + image_url
+        form = UploadForm(request.form)
+        if form.validate():
+            for f in request.files.getlist('photo'):
+                filename = uuid.uuid4().hex
+                photos.save(f, name=filename + '.')
+            return {"success": True}, 201
+        else:
+            return {"success": False, "errors": form.errors}, 400
 
-                uploaded_image = UploadedImage(filename=file.filename, url=complete_url)
-                db.session.add(uploaded_image)
-                db.session.commit()
+@ns_upload.route('/manage')
+class ManageFileResource(Resource):
+    def get(self):
+        files_list = os.listdir(app.config['UPLOADED_PHOTOS_DEST'])
+        return {"files_list": files_list}
 
-                return make_response(jsonify({"url": complete_url}), 200)
-            else:
-                return {"message": "No file uploaded"}, 400
-        except Exception as e:
-            return {"message error": str(e)}, 500
+@ns_upload.route('/open/<filename>')
+class OpenFileResource(Resource):
+    def get(self, filename):
+        file_url = photos.url(filename)
+        return {"file_url": file_url}
 
-api.add_resource(UploadImage, '/uploadimage')
+@ns_upload.route('/delete/<filename>')
+class DeleteFileResource(Resource):
+    def delete(self, filename):
+        file_path = photos.path(filename)
+        os.remove(file_path)
+        return {"message": "File deleted successfully"}, 200
 
-
-@app.route('/photos/<path:filename>')
-def get_image(filename):
-    return send_from_directory('photos', filename)
-
+api.add_namespace(ns_upload)
 
 
 
