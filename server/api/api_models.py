@@ -201,7 +201,8 @@ cart_item_schema = api.model('cart_item', {
     "product_id": fields.Integer,
     "quantity": fields.Integer,
     "added_at": fields.DateTime,
-    "product": fields.Nested(product_summary_schema)
+    "product": fields.Nested(product_summary_schema),
+    "amount": fields.Integer,
 })
 
 

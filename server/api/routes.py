@@ -247,7 +247,7 @@ class MakePayment(Resource):
             return {'message': 'Invalid request data'}, 400
 
 
-@ns_payment.route('/get_payment_confirmation_details/')
+@ns_payment.route('/get_payment_confirmation_details')
 class GetPaymentConfirmation(Resource):
     @ns.marshal_with(payments_schema)
     def get(self):
@@ -584,12 +584,10 @@ class OrderProductsResource(Resource):
 class OrderResource(Resource):
     method_decorators = [jwt_required()]
     @ns.doc(security='jwToken')
-    @ns.marshal_with(order_schema)
+    @ns.marshal_list_with(order_schema)
     def get(self):
         orders = Order.query.filter_by(user_id=current_user.id).all()
         return orders, 200
-
-
 
 
 @ns_order.route('/vendor_orders')
@@ -606,8 +604,6 @@ class VendorOrderResource(Resource):
             return order_products, 200
         else:
             return {"message": "User is not a vendor"}
-
-
 
 
 @ns_order.route('/orders/<int:id>')
@@ -779,8 +775,10 @@ class Users(Resource):
 
 @ns_cartitem.route('/cart_items')
 class CartItems(Resource):
+    method_decorators = [jwt_required()]
     @ns.expect(cart_item_input_schema)
     @ns.marshal_with(cart_item_schema)
+    @ns.doc(security='jwToken')
     def post(self):
         data = request.get_json()
         # print(data)
@@ -790,7 +788,7 @@ class CartItems(Resource):
 
         product_id = data.get('product_id')
         quantity = data.get('quantity')
-        user_id = data.get('user_id')
+        
 
         # Validate that the product with the given ID exists
         product = Product.query.get_or_404(product_id)
@@ -798,7 +796,7 @@ class CartItems(Resource):
             return {'message': 'product not found'}, 404
         
         # Validate that the user exists and get the Cart ID 
-        user = User.query.get_or_404(user_id)
+        user = User.query.get_or_404(current_user.id)
         if user:
             cart = Cart.query.filter_by(user_id = user.id).first()
             # print(cart)
@@ -846,25 +844,8 @@ class ClearCartItemResource(Resource):
             return {"message": "User not found."}, 404
 
 
+
 @ns_cartitem.route('/user_cart_items')
-class CartItemResource(Resource):
-    method_decorators = [jwt_required()]
-    @ns.doc(security='jwToken')
-    @ns.marshal_with(cart_item_schema)
-    def get(self):
-        print('----------------------- current user id: {current_user.id}')
-        current_user_id = current_user.id
-        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
-        if user_cart:
-            user_cart_id = user_cart.id
-            cart_items = CartItem.query.filter(CartItem.cart_id == user_cart_id).all()
-            return cart_items,200
-        else:
-            return {"message":"The user was not found."}
-
-
-
-@ns_cartitem.route('/user_cart_itemss')
 class CIR(Resource):
     method_decorators = [jwt_required()]
 
@@ -948,6 +929,9 @@ class CartItemResource(Resource):
         data = request.get_json()
         for attr in data:
             setattr(cart_item, attr, data[attr])
+        db.session.commit()
+        product = Product.query.filter_by(id = cart_item.product_id).first()
+        cart_item.amount = product.price * cart_item.quantity
         db.session.commit()
         return cart_item
     

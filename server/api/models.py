@@ -117,6 +117,7 @@ class CartItem(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
     quantity = db.Column(db.Integer)
     added_at = db.Column(db.DateTime, server_default=db.func.now())
+    amount = db.Column(db.Float)
 
     # relationships
     cart = db.relationship('Cart', back_populates='cartItems')

@@ -29,7 +29,7 @@ app.config['SECRET_KEY'] = secret_key
 app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_DEBUG'] = True
-app.config['JWT_COOKIE_CSRF_PROTECT']= False
+# app.config['JWT_COOKIE_CSRF_PROTECT']= False
 app.json.compact = False
 
 db.init_app(app)
