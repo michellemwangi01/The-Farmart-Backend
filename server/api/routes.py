@@ -459,7 +459,7 @@ class ProductResource(Resource):
     def delete(self, id):
         product = Product.query.get_or_404(id)
         if product:
-            orders = Order.query.filter(Order.product_id == id).all()
+            # orders = Order.query.filter(Order.product_id == id).all()
             print("---------------------------------------")
             # print(orders)
         db.session.delete(product)
