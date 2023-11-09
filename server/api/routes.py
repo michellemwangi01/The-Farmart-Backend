@@ -1,35 +1,55 @@
-from api import jsonify, request, url_for,  Resource, User, SQLAlchemyError, make_response,  \
-     send_from_directory,  Migrate, db, Api,  \
-   Namespace, Marshmallow, fields, check_password_hash, datetime, uuid
-from api import app, ma, api
+
+from api import jsonify, request, url_for,  Resource, User, make_response, send_from_directory,   db,   \
+   Namespace,  check_password_hash,  uuid
+from api import app, api
 from .api_models import *
-from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage
+from .models import Category, User, Cart, CartItem, Product, Vendor,Order, Payment , UploadedImage, OrderProducts
 import os
 from functools import wraps  
-from marshmallow.exceptions import ValidationError
 from flask_uploads import UploadSet, configure_uploads, IMAGES, configure_uploads
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import SubmitField
-from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt_identity, jwt_required, current_user
 from flask import url_for
+from datetime import  timedelta
 
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
 jwt = JWTManager(app)
+jwt.init_app(app)
 
 
+authorizations = {
+    "jwToken":{
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization"
+    }
+}
 
-ns_auth = Namespace('authorization', description='Authorization related operations')
-ns_payment = Namespace('payments', description='Payment related operations')
-ns_vendor = Namespace('vendors', description='Vendor related operations')
-ns_user = Namespace('users', description='User & Payment related operations')
-ns_category = Namespace('categories', description='Category related operations')
-ns_product = Namespace('products', description='Product related operations')
-ns_cart = Namespace('cart', description='Cart related operations')
-ns_cartitem = Namespace('cartitems', description='CartItem related operations')
-ns_order = Namespace('orders', description='Product Order related operations')
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return user
+
+
+@jwt.user_lookup_loader
+def user_lookup_callback(__jwt__header, jwt_data):
+    identity = jwt_data['sub']
+    return User.query.filter_by(id=identity).first()
+
+
+ns_auth = Namespace('authorization', description='Authorization related operations', authorizations=authorizations)
+ns_payment = Namespace('payments', description='Payment related operations',authorizations=authorizations)
+ns_vendor = Namespace('vendors', description='Vendor related operations',authorizations=authorizations)
+ns_user = Namespace('users', description='User & Payment related operations',authorizations=authorizations)
+ns_category = Namespace('categories', description='Category related operations',authorizations=authorizations)
+ns_product = Namespace('products', description='Product related operations',authorizations=authorizations)
+ns_cart = Namespace('cart', description='Cart related operations',authorizations=authorizations)
+ns_cartitem = Namespace('cartitems', description='CartItem related operations',authorizations=authorizations)
+ns_order = Namespace('orders', description='Product Order related operations', authorizations=authorizations)
+
 api.add_namespace(ns_auth)
 api.add_namespace(ns_payment)
 api.add_namespace(ns_cart)
@@ -39,6 +59,7 @@ api.add_namespace(ns_order)
 api.add_namespace(ns_product)
 api.add_namespace(ns_user)
 api.add_namespace(ns_vendor)
+
 
 # ----------------------------------------------------- G L O B A L  V A R I A B L E S -----------------------------------------------
 
@@ -112,21 +133,38 @@ class Login(Resource):
         if not data or not data['username'] or not data['password']:
             return {'message': 'Unable to verify user'}, 401
 
-        user = User.query.filter_by(username=data['username']).first()
+        user = User.query.filter_by(email=data['username']).first()
 
         if not user:
             return {'message': 'Authentication failed. Invalid username or password'}, 401
 
+        vendor = Vendor.query.filter_by(user_id =user.id).first()
+
+        if not vendor:
+            vendor_id = None
+        else:
+            vendor_id = vendor.id
 
         if check_password_hash(user.password_hash, data['password']):
-            access_token = create_access_token(identity=user.id)
-            refresh_token = create_refresh_token(identity=user.id)
+            access_token = create_access_token(identity=user.id, expires_delta=timedelta(minutes=30))
+
+            refresh_token = create_refresh_token(identity=user.id,expires_delta=timedelta(days=30))
+
             response_data = {
                 'access_token': access_token,
-                'firstname': user.first_name,
-                 'user_id': user.id
+                'refresh_token': refresh_token,
+                'current_user':{
+                    'fullname': user.first_name +" "+ user.last_name,
+                    'firstname': user.first_name ,
+                    'lastname': user.last_name,
+                    'user_id': user.id,
+                    'email':user.email,
+                    'profile_pic':user.profile_pic,
+                    'vendor_id': vendor_id,
+                    'address': user.address,
+                    'phone_number': user.phone_number
+                }    
             }
-
             # Check if the user has a cart, if not, create one
             user_cart = Cart.query.filter_by(user_id=user.id).first()
             if not user_cart:
@@ -144,6 +182,38 @@ class Login(Resource):
             return {'message': 'Invalid credentials'}, 401
 
 
+# @ns_auth.route('/refresh_token')
+# class refreshToken(Resource):
+#     method_decorators = [jwt_required(refresh=True)]
+#     @ns.doc(security='jwToken')
+#     @ns.expect(refresh_token_schema)
+#     def post(self):
+#         # Extract refresh token from req
+#         refresh_token = request.get_json()['refresh_token']
+
+#          # Validate refresh token
+#         if not jwt.refresh_token_loader(refresh_token):
+#             return jsonify({'error': 'Invalid refresh token'}), 401
+        
+#         identity = get_jwt_identity()
+#         print(identity)
+        
+#         # Create new access token and refresh token
+#         new_access_token = create_access_token(identity=get_jwt_identity())
+#         new_refresh_token = create_refresh_token(identity=get_jwt_identity())
+
+        
+#         print('---------------------> {current_user}')
+#         return jsonify({
+#             'access_token': new_access_token,
+#             'refresh_token': new_refresh_token,
+#             'current_user': current_user               
+#         })
+
+#         # access_token = create_access_token(identity=current_user)
+#         # return jsonify({'access_token': access_token}), 200
+
+
 # ----------------------------------------------  P A Y M E N T   R O U T E S -----------------------------------------------
 
  
@@ -151,6 +221,8 @@ class Login(Resource):
 class MakePayment(Resource):
     @ns.marshal_with(payments_schema)
     def post(self):
+        # TO RUN NGROK SERVER TO POPULATE PAYMENT TABLE: `ngrok http 5555 --domain redfish-prime-pigeon.ngrok-free.app`
+        # CHANGE WEBHOOK IN TINYPESA IF DOMAIN CHANGES CURRENT DOMAIN: `redfish-prime-pigeon.ngrok-free.app`
         data = request.get_json()
         if 'Body' in data and 'stkCallback' in data['Body']:
             payment_details = data['Body']['stkCallback']
@@ -184,21 +256,29 @@ class MakePayment(Resource):
                 payment_uid=transaction_data['ExternalReference']
             )
             db.session.add(new_payment)
-            db.session.commit()        
+            db.session.commit() 
+
+            # update order status with payment confirmed
+            orders = Order.query.filter_by(payment_uid=transaction_data['ExternalReference'])
+            if orders:
+                for order in orders:
+                    order.status = 'Payment Received'
+                db.session.commit()
+                
 
             return new_payment, 201
         else:
             return {'message': 'Invalid request data'}, 400
 
 
-# <int:phonenumber>
-@ns_payment.route('/get_payment_confirmation_details/')
+@ns_payment.route('/get_payment_confirmation_details')
 class GetPaymentConfirmation(Resource):
+    @ns.marshal_with(payments_schema)
     def get(self):
-        if len(paymentConfirmationDetails) > 0:
-            print(f'-----------------> {paymentConfirmationDetails}')
-            return paymentConfirmationDetails, 200
-        
+        payments = Payment.query.all()
+        if payments:
+            # print(f'-----------------> {payments}')
+            return payments, 200
         else:
             return {'message': 'No payment confirmation data available'}, 404 
         
@@ -252,8 +332,9 @@ class Vendors(Resource):
             physical_address=data['physical_address'],
             latitude=data['latitude'],
             longitude=data['longitude'],
-            product_list=data['product_list'],
-            image=data['image']
+            product_list=', '.join(data['category']),
+            image=data['image'],
+            county=data['county']
         )
         db.session.add(new_vendor)
         db.session.commit()
@@ -356,11 +437,11 @@ class Products(Resource):
 
 @ns_product.route('/vendor_products')
 class ProductResource(Resource):  
-    @jwt_required()
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
     @ns.marshal_with(product_schema)
     def get(self):
-        current_user_id = get_jwt_identity()
-        vendor = Vendor.query.filter_by(user_id=current_user_id).first()
+        vendor = Vendor.query.filter_by(user_id=current_user.id).first()
         if vendor:    
             products = Product.query.filter_by(vendor_id=vendor.id).all()
             return products, 200
@@ -375,17 +456,18 @@ class ProductResource(Resource):
         product = Product.query.get_or_404(id)
         return product
 
-    # @ns.response(204, 'Product deleted')
     def delete(self, id):
         product = Product.query.get_or_404(id)
         if product:
-            orders = Order.query.filter(Order.product_id == id).all()
+            # orders = Order.query.filter(Order.product_id == id).all()
             print("---------------------------------------")
-            print(orders)
+            # print(orders)
         db.session.delete(product)
         db.session.commit()
-        return {"message":"product successfully deleted"}, 200
+        return {"message":"product successfully deleted!"}, 200
     
+
+
     @ns.expect(product_input_schema)
     @ns.marshal_with(product_schema)
     def put(self, id):
@@ -475,22 +557,21 @@ class CategoryResource(Resource):
 
 @ns_order.route('/orders')
 class OrderList(Resource):
+    method_decorators = [jwt_required()]
+    # @ns.doc(security='jwToken')
     @ns.marshal_list_with(order_schema)
     def get(self):
         orders = Order.query.all()
         return orders
 
+    @ns.doc(security='jwToken')
     @ns.expect(order_input_schema)
     @ns.marshal_with(order_schema)
     def post(self):
         data = request.get_json()
-
         new_order = Order(
-            user_id = data['user_id'],
-            quantity=data['quantity'],
+            user_id = current_user.id,
             status=data['status'],
-            product_id=data['product_id'],
-            vendor_id = data['vendor_id'],
             payment_uid = data['payment_uid'],
             delivery_type = data['delivery_type'],
             phone_number = data['phone_number'],
@@ -504,15 +585,50 @@ class OrderList(Resource):
         db.session.commit()
         return new_order, 201
 
+@ns_order.route('/product_orders')  
+class OrderProductsResource(Resource):
+    @ns.expect(order_products_schema)
+    @ns.marshal_with(order_products_schema)    
+    def post(self):
+        data = request.get_json() 
+        # print(data)
+        new_order_product = OrderProducts(
+            order_id= data['order_id'],
+            product_id= data['product_id'],
+            quantity= data['quantity'],
+            amount= data['amount'],
+            vendor_id = data['vendor_id']
+        )
+        db.session.add(new_order_product)
+        db.session.commit()
+        return new_order_product,200
+
 
 @ns_order.route('/user_orders')
 class OrderResource(Resource):
-    @jwt_required()
-    @ns.marshal_with(order_schema)
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
+    @ns.marshal_list_with(order_schema)
     def get(self):
-        current_user_id = get_jwt_identity()
-        orders = Order.query.filter_by(user_id=current_user_id).all()
+        orders = Order.query.filter_by(user_id=current_user.id).all()
         return orders, 200
+
+
+@ns_order.route('/vendor_orders')
+class VendorOrderResource(Resource):
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
+    @ns.marshal_with(order_products_schema)
+    def get(self):
+        vendor = Vendor.query.filter_by(user_id=current_user.id).first()
+        # print(vendor)
+        if vendor:
+            order_products = OrderProducts.query.filter_by(vendor_id=vendor.id).all()
+            # print(order_products)
+            return order_products, 200
+        else:
+            return {"message": "User is not a vendor"}
+
 
 @ns_order.route('/orders/<int:id>')
 class OrderResource(Resource):
@@ -540,7 +656,7 @@ class OrderResource(Resource):
         order.quantity = data.get('quantity')
         order.status = data.get('status')
         db.session.commit()
-        return order
+        return order, 200
 
     @ns.expect(order_input_schema)
     @ns.marshal_with(order_schema)
@@ -551,9 +667,10 @@ class OrderResource(Resource):
         for attr in data:
             setattr(order, attr, data[attr])
         db.session.commit()
-        return order
+        return order, 200
 
-    
+
+
 
 # ---------------------------------------------- C A R T S   R O U T E S -----------------------------------------------
 
@@ -603,6 +720,7 @@ class CartResource(Resource):
 # ---------------------------------------------- U S E R    R O U T E S -----------------------------------------------
 @ns_user.route('/users')
 class Users(Resource):
+    method_decorators = [jwt_required()]
     @ns.expect(user_input_schema)
     @ns.marshal_with(users_schema, code=201)
     def post(self):
@@ -625,44 +743,43 @@ class Users(Resource):
         db.session.commit()
         return new_user, 201
     
-    # @token_required
+    @ns.doc(security='jwToken')
     @ns.marshal_list_with(users_schema)
     def get(self):
-        # if not current_user.admin:
-        #     return jsonify({"message": "Sorry. You are not authorized to perform this function"})
         users = User.query.all()
         return users,200
 
 
-@ns_user.route('/users/<int:id>')
-class UserResource(Resource):
-    @ns.marshal_with(user_schema)
-    def get(self, id):
-        user = User.query.get_or_404(id)
-        return user
+    # @ns.marshal_with(user_schema)
+    # def get(self, id):
+    #     user = User.query.get_or_404(id)
+    #     return user
     
     @ns.expect(user_input_schema)
     @ns.marshal_with(users_schema)
     def put(self, id):
-        # Update a user by ID using request data
         user = User.query.get_or_404(id)
         data = request.get_json()
         user.username = data.get('username')
         user.email = data.get('email')
-        # Update other user fields as needed
         db.session.commit()
         return user
 
+    
     @ns.expect(user_input_schema)
     @ns.marshal_with(users_schema)
-    def patch(self, id):
-        # Partially update a user by ID using request data
-        user = User.query.get_or_404(id)
+    @ns.doc(security='jwToken')
+    def patch(self):
+        print(current_user)
+        user = User.query.get_or_404(current_user.id)
         data = request.get_json()
+        print(f'------------------------------RECEIVED USER UPDATES: {data}')
+
         for attr in data:
-            setattr(user, attr, data[attr])
-        # Update other user fields as needed
+            setattr(user, attr, data[attr])      
+        db.session.add(user) 
         db.session.commit()
+        print(f'------------------------------NEW USER: {user}')
         return user
     
     # @token_required
@@ -682,56 +799,132 @@ class UserResource(Resource):
 
 @ns_cartitem.route('/cart_items')
 class CartItems(Resource):
+    method_decorators = [jwt_required()]
     @ns.expect(cart_item_input_schema)
     @ns.marshal_with(cart_item_schema)
+    @ns.doc(security='jwToken')
     def post(self):
         data = request.get_json()
-
+        # print(data)
         errors = cart_item_input_schema.validate(data)
         if errors:
             return {'message': 'Input data is not valid', 'errors': errors}, 400
 
         product_id = data.get('product_id')
         quantity = data.get('quantity')
-        cart_id = data.get('cart_id')
+        
 
         # Validate that the product with the given ID exists
-        product = Product.query.get(product_id)
+        product = Product.query.get_or_404(product_id)
         if not product:
             return {'message': 'product not found'}, 404
+        
+        # Validate that the user exists and get the Cart ID 
+        user = User.query.get_or_404(current_user.id)
+        if user:
+            cart = Cart.query.filter_by(user_id = user.id).first()
+            # print(cart)
+            if cart:
+                new_cart_item = CartItem(
+                    product_id=product_id,
+                    quantity=quantity,
+                    cart_id = cart.id
+                    )
+                # print(new_cart_item)
+                db.session.add(new_cart_item)
+                db.session.commit()
+                return new_cart_item, 201
+            else:
+                return {'message': 'Cart not found'}, 404
+        else:
+            return {'message': 'User not found'}, 404
 
         # Create a new cart item
-        new_cart_item = CartItem(
-            product_id=product_id,
-            quantity=quantity,
-            cart_id = cart_id
-        )
-
-        db.session.add(new_cart_item)
-        db.session.commit()
-
-        return new_cart_item, 201
+        
 
     @ns.marshal_list_with(cart_item_schema)
     def get(self):
         cart_items = CartItem.query.all()
         return cart_items
 
+@ns_cartitem.route('/clear_cart_items')
+class ClearCartItemResource(Resource):
+    method_decorators = [jwt_required()]
+    @ns.doc(security='jwToken')
+    def delete(self):
+        # user_id = request.get_json()['user_id']
+        print('----------------------- current user id: {current_user.id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user.id).first()
+
+        if user_cart:
+            user_cart_id = user_cart.id
+            CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
+            
+        
+            db.session.commit()
+            
+            return {"message": "Cart successfully cleared"}, 200
+        else:
+            return {"message": "User not found."}, 404
+
+
 
 @ns_cartitem.route('/user_cart_items')
-class CartItemResource(Resource):
-    @jwt_required()
+class CIR(Resource):
+    method_decorators = [jwt_required()]
+
     @ns.marshal_with(cart_item_schema)
+
+    @ns.doc(security='jwToken')
     def get(self):
-        current_user_id = get_jwt_identity()
-        print('----------------------- current user id: {current_user_id}')
-        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        print(f'----------------------- current user id: {current_user.id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user.id).first()
         if user_cart:
             user_cart_id = user_cart.id
             cart_items = CartItem.query.filter(CartItem.cart_id == user_cart_id).all()
             return cart_items,200
         else:
             return {"message":"The user was not found."}
+        
+
+    @jwt_required()
+    # @ns.expect(cart_delete_schema)
+    @ns.marshal_with(cart_item_schema)
+    def delete(self):
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        # print(data)
+        current_user_id = get_jwt_identity()
+    
+        print('----------------------- current user id: {current_user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        if user_cart:
+            user_cart_id = user_cart.id
+            CartItem.query.filter(CartItem.cart_id == user_cart_id).delete()
+            return {"message":"Cart Successfully cleared"},200
+        else:
+            return {"message":"The user was not found."}, 404
+        
+
+    @jwt_required()
+    @ns.marshal_with(cart_item_schema)
+    def post(self):
+        data = request.get_json()
+        current_user_id = get_jwt_identity()
+        print('----------------------- current user id: {current_user_id}')
+        user_cart = Cart.query.filter(Cart.user_id == current_user_id).first()
+        if user_cart:
+            user_cart_id = user_cart.id
+            new_cart_item = CartItem(
+                product_id=data['product_id'],
+                quantity=data["quantity"],
+                cart_id = user_cart_id
+        )
+            new_cart_item.save()
+            return new_cart_item,200
+        else:
+            return {"message":"The user was not found."}
+        
         
 @ns_cartitem.route('/cart_items/<int:id>')
 class CartItemResource(Resource):
@@ -756,11 +949,13 @@ class CartItemResource(Resource):
     @ns.expect(cart_item_input_schema)
     @ns.marshal_with(cart_item_schema)
     def patch(self, id):
-        # Partially update a cart item by ID using request data
         cart_item = CartItem.query.get_or_404(id)
         data = request.get_json()
         for attr in data:
             setattr(cart_item, attr, data[attr])
+        db.session.commit()
+        product = Product.query.filter_by(id = cart_item.product_id).first()
+        cart_item.amount = product.price * cart_item.quantity
         db.session.commit()
         return cart_item
     

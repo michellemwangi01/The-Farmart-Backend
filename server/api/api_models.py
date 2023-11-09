@@ -20,10 +20,10 @@ users_schema = api.model('users',{
     "username": fields.String,
     "email": fields.String,
     "first_name": fields.String,
-    "first_name": fields.String,
+    "last_name": fields.String,
     "address": fields.String,
     "phone_number": fields.String,
-     "profile_pic": fields.String,
+    "profile_pic": fields.String,
 })
 
 
@@ -62,14 +62,7 @@ category_input_schema = api.model('category_input',{
     'image': fields.String
 })
 
-payments_schema = api.model('payments',{
-    'id':fields.Integer,
-    'mpesa_receipt_code':fields.String,
-    'payment_date':fields.String,
-    'paid_by_number':fields.String,
-    'amount_paid':fields.Integer,
-    'payment_uid':fields.String
-})
+
 
 photo_category_schema = api.model('photo_category',{
     "id": fields.Integer,
@@ -102,9 +95,10 @@ categories_schema = api.model('categories',{
 
 
 cart_item_input_schema = api.model('cart_item_input', {
-    "product_id": fields.Integer(required=True),
-    "quantity": fields.Integer(required=True),
-    "cart_id": fields.Integer(required=True)
+    "product_id": fields.Integer,
+    "quantity": fields.Integer,
+    "cart_id": fields.Integer
+    
 })
 
 transaction_input_schema = api.model('transaction_input', {
@@ -168,11 +162,20 @@ product_input_schema = api.model('product_input', {
 })
 
 vendor_order_schema =  api.model('vendor_order',{
-    "id":fields.Integer,
+   "id":fields.Integer,
     "user_id" : fields.Integer, 
     "fullnames" :fields.String,
-    "business_name" :fields.String, 
-    "county": fields.String
+    "business_name" :fields.String,
+    "mobile_number" :fields.String,
+    "email_address" : fields.String,
+    "physical_address" : fields.String,
+    "latitude" : fields.Float,
+    "longitude" : fields.Float,
+    "product_list" : fields.String,
+    "image" : fields.String,
+    "county": fields.String,
+    "created_at" : fields.DateTime,
+    "updated_at" : fields.DateTime, 
 })
 product_summary_schema = api.model("products_order", {
     "id": fields.Integer,
@@ -198,20 +201,11 @@ cart_item_schema = api.model('cart_item', {
     "product_id": fields.Integer,
     "quantity": fields.Integer,
     "added_at": fields.DateTime,
-    "product": fields.Nested(product_summary_schema)
+    "product": fields.Nested(product_summary_schema),
+    "amount": fields.Integer,
 })
 
-product_schema = api.model("products", {
-    "id": fields.Integer,
-    "name": fields.String,
-    "description": fields.String,
-    "image": fields.String,
-    "price": fields.Integer,
-    "category_id": fields.Integer,
-    "vendor": fields.Nested(vendor_order_schema),
-    "category": fields.Nested(category_input_schema),
-    
-})
+
 
 order_input_schema = api.model('order_input', {
     "product_id": fields.Integer,
@@ -231,10 +225,32 @@ order_input_schema = api.model('order_input', {
     "Pickup": fields.String,
 
 })
+product_schema = api.model("products", {
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "image": fields.String,
+    "price": fields.Integer,
+    "category_id": fields.Integer,
+    "vendor": fields.Nested(vendor_order_schema),
+    "category": fields.Nested(category_input_schema),
+    "created_at": fields.DateTime
+    
+})
+
+
+payments_schema = api.model('payments',{
+    'id':fields.Integer,
+    'mpesa_receipt_code':fields.String,
+    'payment_date':fields.String,
+    'paid_by_number':fields.String,
+    'amount_paid':fields.Integer,
+    'payment_uid':fields.String,
+    # 'order':fields.Nested(order_products_schema)
+})
 
 order_schema = api.model('order', {
     "id": fields.Integer,
-    "product_id": fields.Integer,
     "user_id": fields.Integer,
     "quantity": fields.Integer,
     "status": fields.String,
@@ -244,11 +260,16 @@ order_schema = api.model('order', {
     "county" : fields.String,
     "email" :fields.String,
     "amount" : fields.Integer,
-    "order_date" :fields.DateTime,
+    "date_created" :fields.DateTime,
     "payment_uid" : fields.String,
-    "product": fields.Nested(product_summary_schema),
+    "products": fields.List(fields.Nested(product_schema)),
     "user": fields.Nested(users_summary_schema),
+    'payment': fields.Nested(payments_schema),
+   
+  
 })
+
+
 user_schema = api.model('user',{
     "public_id": fields.String,
     "username": fields.String,
@@ -274,9 +295,10 @@ vendor_schema=api.model('vendor',{
     "image" : fields.String,
     "created_at" : fields.DateTime,
     "updated_at" : fields.DateTime, 
-    "products": fields.List(fields.Nested(product_summary_schema)),
+    "products": fields.List(fields.Nested(product_schema)),
     "orders": fields.List(fields.Nested(order_schema))
 })
+
 cart_schema=api.model('cart',{
     "id": fields.Integer,
     "user_id": fields.Integer,
@@ -290,3 +312,33 @@ UploadImage_schema=api.model('UploadImage',{
     "url":fields.String
 })
 
+cart_delete_schema = api.model('cart_delete_schema',{
+
+})
+product_order_schema = api.model('product_order_schema',{
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String,
+    "image": fields.String,
+    "price": fields.Integer,
+    "category_id": fields.Integer,
+    "category": fields.Nested(category_input_schema),
+    "created_at": fields.DateTime
+})
+
+order_products_schema = api.model('order_products_schema',{
+    'id': fields.Integer,
+    'product_id': fields.Integer,
+    'vendor_id': fields.Integer,
+    'order_id': fields.Integer,
+    'quantity': fields.Integer,
+    'amount': fields.Integer,
+    'products': fields.Nested(product_order_schema),
+    'orders': fields.Nested(order_schema),
+    'vendor': fields.Nested(vendor_order_schema),
+    'payment': fields.Nested(payments_schema),
+})
+
+refresh_token_schema = api.model('refresh_token_schema',{
+    "refresh_token": fields.String
+})

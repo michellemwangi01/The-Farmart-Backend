@@ -29,13 +29,14 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
+    # relationships
     orders = db.relationship('Order', back_populates='user', cascade='all, delete-orphan')
     cart = db.relationship('Cart', back_populates='user', cascade='all, delete-orphan')
 
     __table_args__ = (
     UniqueConstraint('username', name='user_unique_constraint'),
     UniqueConstraint('email', name='email_unique_constraint')
-)
+    )
 
 
     def __repr__(self):
@@ -65,34 +66,16 @@ class Vendor(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
+    # relationships
     products = db.relationship('Product', back_populates='vendor', cascade='all, delete-orphan')
     orders = association_proxy('products', 'orders')
 
-    
+    # association proxy relationships
+    orderproducts = db.relationship('OrderProducts', back_populates='vendor', cascade='all, delete-orphan')
+    orders = association_proxy('orderproducts','orders')
     
     def __repr__(self):
         return f'(id={self.id}, businessName={self.business_name} email={self.email_address} mobile_number={self.mobile_number} product_list={self.product_list} )'
-
-class Product(db.Model):
-    __tablename__ = 'products'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    description = db.Column(db.String)
-    price = db.Column(db.Numeric(precision=10, scale=2))
-    vendor_id = db.Column(db.Integer, ForeignKey('vendors.id', ondelete='CASCADE'))
-    category_id = db.Column(db.Integer, ForeignKey('categories.id', ondelete='CASCADE'))
-    image = db.Column(db.String)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-    __table_args__ = (UniqueConstraint('name', name='product_name_unique_constraint'),)
-
-    vendor = db.relationship('Vendor', back_populates='products')
-    category = db.relationship('Category', back_populates='products')
-    orders = db.relationship('Order', back_populates='product', cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f'(id={self.id}, name={self.name} description={self.description} price={self.price} price={self.image} user_id={self.user_id} category_id={self.category_id} )'
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -105,6 +88,7 @@ class Category(db.Model):
 
     __table_args__ = (UniqueConstraint('name', name='category_name_unique_constraint'),)
 
+    # relationships
     products = db.relationship('Product', back_populates='category', cascade='all, delete-orphan')
 
     def __repr__(self):
@@ -118,6 +102,7 @@ class Cart(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
+    # relationships
     user = db.relationship('User', back_populates='cart', uselist=False)
     cartItems = db.relationship('CartItem', back_populates='cart', cascade='all, delete-orphan')
 
@@ -132,20 +117,63 @@ class CartItem(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
     quantity = db.Column(db.Integer)
     added_at = db.Column(db.DateTime, server_default=db.func.now())
+    amount = db.Column(db.Float)
 
+    # relationships
     cart = db.relationship('Cart', back_populates='cartItems')
     product = db.relationship('Product')
 
     def __repr__(self):
         return f'(id={self.id}, cart_id={self.cart_id}, product_id={self.product_id}, quantity={self.quantity})'
 
+class Product(db.Model):
+    __tablename__ = 'products'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    description = db.Column(db.String)
+    product_code = db.Column(db.String)
+    price = db.Column(db.Numeric(precision=10, scale=2))
+    vendor_id = db.Column(db.Integer, ForeignKey('vendors.id', ondelete='CASCADE'))
+    category_id = db.Column(db.Integer, ForeignKey('categories.id', ondelete='CASCADE'))
+    image = db.Column(db.String)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+    __table_args__ = (UniqueConstraint('name', name='product_name_unique_constraint'),)
+
+    # relationships 
+    vendor = db.relationship('Vendor', back_populates='products')
+    category = db.relationship('Category', back_populates='products')
+    orders = db.relationship('Order', back_populates='product', cascade='all, delete-orphan')
+
+    # association proxy relationships
+    orderproducts = db.relationship('OrderProducts', back_populates='products', cascade='all, delete-orphan')
+    orders = association_proxy('orderproducts','orders')
+
+    def __repr__(self):
+        return f'(id={self.id}, name={self.name} description={self.description} price={self.price} price={self.image} user_id={self.user_id} category_id={self.category_id} )'
+
+
+class OrderProducts(db.Model):
+    __tablename__ = 'order_products'
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
+    vendor_id  = db.Column(db.Integer, db.ForeignKey('vendors.id'))
+    amount = db.Column(db.Integer)
+    quantity = db.Column(db.Integer)
+
+    # relationships
+    products = db.relationship('Product', back_populates='orderproducts')
+    orders = db.relationship('Order',back_populates='orderproducts')
+    vendor = db.relationship('Vendor', back_populates ='orderproducts')
+
 class Order(db.Model):
     __tablename__ = 'orders'
 
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    quantity = db.Column(db.Integer)
     status = db.Column(db.String, default="Ordered")
     delivery_type = db.Column(db.String)
     phone_number = db.Column(db.String)
@@ -153,16 +181,17 @@ class Order(db.Model):
     county = db.Column(db.String)
     email = db.Column(db.String)
     amount = db.Column(db.Integer)
-    vendor_id = db.Column(db.Integer)
     full_name = db.Column(db.String)
-    order_date = db.Column(db.DateTime, server_default=db.func.now())
+    date_created = db.Column(db.DateTime, server_default=db.func.now())
     payment_uid = db.Column(db.String, db.ForeignKey('payments.payment_uid'))
 
-
-    product = db.relationship('Product', back_populates='orders')
+    # relationships
     user = db.relationship('User', back_populates='orders')
     payment = db.relationship('Payment', back_populates='order')
 
+    # association proxy relationships
+    orderproducts = db.relationship('OrderProducts', back_populates='orders', cascade='all, delete-orphan')
+    products = association_proxy('orderproducts','products')
 
     @validates('cart_item')
     def validate_cart_item(self, key, cart_item):
@@ -172,6 +201,7 @@ class Order(db.Model):
 
     def __repr__(self):
         return f'(id={self.id}, product_id={self.product_id}, user_id={self.user_id}, purchased_at={self.purchased_at})'
+
 
 class Payment(db.Model):
     __tablename__ = 'payments'
