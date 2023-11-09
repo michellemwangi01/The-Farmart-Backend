@@ -181,13 +181,39 @@ class Login(Resource):
         else:
             return {'message': 'Invalid credentials'}, 401
 
-@ns_auth.route('/refresh_token')
-class refreshToken(Resource):
-    method_decorators = [jwt_required(refresh=True)]
-    @ns.doc(security='jwToken')
-    def post(self):
-        access_token = create_access_token(identity=current_user)
-        return jsonify({'access_token': access_token}), 200
+
+# @ns_auth.route('/refresh_token')
+# class refreshToken(Resource):
+#     method_decorators = [jwt_required(refresh=True)]
+#     @ns.doc(security='jwToken')
+#     @ns.expect(refresh_token_schema)
+#     def post(self):
+#         # Extract refresh token from req
+#         refresh_token = request.get_json()['refresh_token']
+
+#          # Validate refresh token
+#         if not jwt.refresh_token_loader(refresh_token):
+#             return jsonify({'error': 'Invalid refresh token'}), 401
+        
+#         identity = get_jwt_identity()
+#         print(identity)
+        
+#         # Create new access token and refresh token
+#         new_access_token = create_access_token(identity=get_jwt_identity())
+#         new_refresh_token = create_refresh_token(identity=get_jwt_identity())
+
+        
+#         print('---------------------> {current_user}')
+#         return jsonify({
+#             'access_token': new_access_token,
+#             'refresh_token': new_refresh_token,
+#             'current_user': current_user               
+#         })
+
+#         # access_token = create_access_token(identity=current_user)
+#         # return jsonify({'access_token': access_token}), 200
+
+
 # ----------------------------------------------  P A Y M E N T   R O U T E S -----------------------------------------------
 
  
@@ -251,7 +277,7 @@ class GetPaymentConfirmation(Resource):
     def get(self):
         payments = Payment.query.all()
         if payments:
-            print(f'-----------------> {payments}')
+            # print(f'-----------------> {payments}')
             return payments, 200
         else:
             return {'message': 'No payment confirmation data available'}, 404 

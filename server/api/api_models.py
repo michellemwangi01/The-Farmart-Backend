@@ -338,3 +338,7 @@ order_products_schema = api.model('order_products_schema',{
     'vendor': fields.Nested(vendor_order_schema),
     'payment': fields.Nested(payments_schema),
 })
+
+refresh_token_schema = api.model('refresh_token_schema',{
+    "refresh_token": fields.String
+})
