@@ -223,7 +223,11 @@ class MakePayment(Resource):
     def post(self):
         # TO RUN NGROK SERVER TO POPULATE PAYMENT TABLE: `ngrok http 5555 --domain redfish-prime-pigeon.ngrok-free.app`
         # CHANGE WEBHOOK IN TINYPESA IF DOMAIN CHANGES CURRENT DOMAIN: `redfish-prime-pigeon.ngrok-free.app`
+        # WEBHOOK: https://the-farmart.onrender.com/farmartpayment
+        print(f'--------------------Payment Information')
+
         data = request.get_json()
+        print(f'--------------------{data}')
         if 'Body' in data and 'stkCallback' in data['Body']:
             payment_details = data['Body']['stkCallback']
             if payment_details:
